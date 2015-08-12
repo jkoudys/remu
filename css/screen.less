@@ -1,0 +1,269 @@
+/* The palette */
+@color-greenScreen: #acb651;
+@color-redButton: #a50026;
+@color-redLine: #9c0034;
+@color-blueLine: #100d82;
+@color-greyStart: #959595;
+@color-greyRidge: #e3e3e3;
+@color-whiteBody: #fafafa;
+
+/* Grid layout */
+@grid-gutter-width: 12px;
+@grid-indent: 28px;
+
+@screen-lg-min: 1400px;
+
+@z-index-nav: 1050;
+@z-index-aside: 1000;
+
+@width-menu: 320px;
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	background-color: @color-whiteBody;
+	color: #000;
+	font-family: 'Lato', Arial, Helvetica, sans-serif;
+	margin: 0;
+}
+
+button {
+	cursor: pointer;
+	background: transparent;
+	border: none;
+}
+
+ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+aside.menupanel {
+	@nav-height: 31px;
+	background-color: #fff;
+	position: fixed;
+	right: 0;
+	top: 0;
+	transition-duration: 0.2s;
+	width: @width-menu;
+	height: 100%;
+	font-size: 14px;
+	border-left: 1px solid @color-greyStart;
+	margin-right: -@width-menu;
+	&.open {
+		margin-right: 0;
+	}
+	/* Container :( */
+	> section {
+		padding: @nav-height @grid-gutter-width 0 @grid-gutter-width;
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		width: 100%;
+		overflow-y: auto;
+		z-index: @z-index-aside;
+	}
+	/* The navbar at the top of the pullout menu */
+	> nav {
+		text-align: center;
+		position: relative;
+		padding: 0.5em 0;
+		margin: 0;
+		background: @color-greyStart;
+		color: @color-whiteBody;
+		z-index: @z-index-nav;
+		h1 {
+			margin: 0;
+			font-weight: 500;
+			font-size: 15px;
+		}
+		button {
+			position: absolute;
+			top: 0;
+			line-height: 1em;
+			margin: 0.5em 0;
+			color: inherit;
+			&.back {
+				left: 0;
+			} 
+			&.close {
+				right: 0;
+			}
+			&.menutoggle {
+				left: -90px;
+				color: #000;
+				i.fa {
+					background-color: @color-redButton;
+					color: @color-whiteBody;
+					height: 22px;
+					width: 22px;
+					line-height: 23px;
+					display: inline-block;
+					border-radius: 50%;
+				}
+			}
+		}
+	}
+
+	/* The content of the pullout menu */
+	> section {
+		position: relative;
+		section {
+			border-top: 1px solid @color-greyRidge;
+			padding: @grid-gutter-width @grid-gutter-width @grid-gutter-width @grid-indent;
+		}
+		h3{
+			margin: 0;
+			.fa {
+				color: @color-greyStart;
+				margin-left: -@grid-indent;
+				width: 20px;
+			}
+		}
+
+		h3 {
+		}
+	}
+	.submenus {
+		ul {
+			margin-left: -@grid-indent;
+			li {
+				padding: 4px 0;
+				margin-top: 2px;
+				transition-duration: 0.1s;
+				border-radius: 5px;
+				margin-right: -@grid-gutter-width;
+				&:first-child {
+					margin-top: 0;
+				}
+				&:hover {
+					cursor: pointer;
+					color: #000;
+					background-color: @color-greyRidge;
+					i {
+						color: inherit;
+					}
+				}
+			}
+			i.fa {
+				color: @color-greyStart;
+				width: 20px;
+				margin-left: (@grid-indent - 20px) / 2;
+			}
+		}
+	}
+
+	#savestates {
+		li {
+			a {
+				width: 100%;
+				text-align: center;
+				padding: 4px 2px;
+				margin-top: 5px;
+				border-radius: 5px;
+				border: 1px solid @color-greyRidge;
+				display: block;
+				transition-duration: 0.1s;
+				&:hover {
+					border: 1px solid @color-redButton;
+					color: @color-whiteBody;
+					cursor: pointer;
+					background: @color-redButton;
+				}
+			}
+		}
+		fieldset {
+			text-align: center;
+			border: none;
+			padding: 0;
+			font-size: 36px;
+			line-height: 36px;
+			margin: @grid-gutter-width 0;
+			i.fa {
+				font-size: 36px;
+			}
+			button {
+				transition-duration: 0.2s;
+				&:hover {
+					opacity: 0.8;
+				}
+				&:first-child {
+					margin-right: 15px;
+				}
+			}
+		}
+	}
+
+	#emulatorlog {
+		table {
+			font-family: 'Roboto Mono', courier;
+			td {
+				font-size: 12px;
+			}
+		}
+	}
+
+	dl {
+		line-height: 1.4em;
+		dt {
+			clear: left;
+			font-weight: 700;
+			&:after {
+				content: ": ";
+			}
+		}
+		dt, dd {
+			float: left;
+		}
+		dd {
+			margin-left: 0.5em;
+		}
+		&:after {
+			display: table;
+			content: "";
+			clear: both;
+		}
+	}
+}
+
+.romloader {
+	text-align: center;
+	font-size: 18px;
+	font-family: 'Roboto Mono', courier;
+	font-weight: 700;
+	height: 78vmin;
+	width: 100vmin;
+	vertical-align: middle;
+	margin: 11vmin auto;
+	background: @color-greyStart;
+	border-radius: 2vmin 2vmin 14vmin 2vmin;
+	i.fa {
+		display: block;
+		font-size: 120px;
+	}
+	fieldset {
+		height: 66vmin;
+		width: 66vmin;
+		margin: 0 auto;
+		position: relative;
+		top: 6vmin;
+		background-color: @color-greenScreen;
+		> div {
+			display: inline-block;
+			line-height: 66vmin;
+			letter-spacing: 2em;
+			text-align: left;
+			margin-top: 35%;
+			* {
+				line-height: 1em;
+			}
+			span {
+				letter-spacing: initial;
+			}
+		}
+	}
+}

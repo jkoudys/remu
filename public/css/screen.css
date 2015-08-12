@@ -1,0 +1,231 @@
+/* The palette */
+/* Grid layout */
+* {
+  box-sizing: border-box;
+}
+body {
+  background-color: #fafafa;
+  color: #000;
+  font-family: 'Lato', Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+button {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+aside.menupanel {
+  background-color: #fff;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transition-duration: 0.2s;
+  width: 320px;
+  height: 100%;
+  font-size: 14px;
+  border-left: 1px solid #959595;
+  margin-right: -320px;
+  /* Container :( */
+  /* The navbar at the top of the pullout menu */
+  /* The content of the pullout menu */
+}
+aside.menupanel.open {
+  margin-right: 0;
+}
+aside.menupanel > section {
+  padding: 31px 12px 0 12px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+}
+aside.menupanel > nav {
+  text-align: center;
+  position: relative;
+  padding: 0.5em 0;
+  margin: 0;
+  background: #959595;
+  color: #fafafa;
+  z-index: 1050;
+}
+aside.menupanel > nav h1 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 15px;
+}
+aside.menupanel > nav button {
+  position: absolute;
+  top: 0;
+  line-height: 1em;
+  margin: 0.5em 0;
+  color: inherit;
+}
+aside.menupanel > nav button.back {
+  left: 0;
+}
+aside.menupanel > nav button.close {
+  right: 0;
+}
+aside.menupanel > nav button.menutoggle {
+  left: -90px;
+  color: #000;
+}
+aside.menupanel > nav button.menutoggle i.fa {
+  background-color: #a50026;
+  color: #fafafa;
+  height: 22px;
+  width: 22px;
+  line-height: 23px;
+  display: inline-block;
+  border-radius: 50%;
+}
+aside.menupanel > section {
+  position: relative;
+}
+aside.menupanel > section section {
+  border-top: 1px solid #e3e3e3;
+  padding: 12px 12px 12px 28px;
+}
+aside.menupanel > section h3 {
+  margin: 0;
+}
+aside.menupanel > section h3 .fa {
+  color: #959595;
+  margin-left: -28px;
+  width: 20px;
+}
+aside.menupanel .submenus ul {
+  margin-left: -28px;
+}
+aside.menupanel .submenus ul li {
+  padding: 4px 0;
+  margin-top: 2px;
+  transition-duration: 0.1s;
+  border-radius: 5px;
+  margin-right: -12px;
+}
+aside.menupanel .submenus ul li:first-child {
+  margin-top: 0;
+}
+aside.menupanel .submenus ul li:hover {
+  cursor: pointer;
+  color: #000;
+  background-color: #e3e3e3;
+}
+aside.menupanel .submenus ul li:hover i {
+  color: inherit;
+}
+aside.menupanel .submenus ul i.fa {
+  color: #959595;
+  width: 20px;
+  margin-left: 4px;
+}
+aside.menupanel #savestates li a {
+  width: 100%;
+  text-align: center;
+  padding: 4px 2px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: 1px solid #e3e3e3;
+  display: block;
+  transition-duration: 0.1s;
+}
+aside.menupanel #savestates li a:hover {
+  border: 1px solid #a50026;
+  color: #fafafa;
+  cursor: pointer;
+  background: #a50026;
+}
+aside.menupanel #savestates fieldset {
+  text-align: center;
+  border: none;
+  padding: 0;
+  font-size: 36px;
+  line-height: 36px;
+  margin: 12px 0;
+}
+aside.menupanel #savestates fieldset i.fa {
+  font-size: 36px;
+}
+aside.menupanel #savestates fieldset button {
+  transition-duration: 0.2s;
+}
+aside.menupanel #savestates fieldset button:hover {
+  opacity: 0.8;
+}
+aside.menupanel #savestates fieldset button:first-child {
+  margin-right: 15px;
+}
+aside.menupanel #emulatorlog table {
+  font-family: 'Roboto Mono', courier;
+}
+aside.menupanel #emulatorlog table td {
+  font-size: 12px;
+}
+aside.menupanel dl {
+  line-height: 1.4em;
+}
+aside.menupanel dl dt {
+  clear: left;
+  font-weight: 700;
+}
+aside.menupanel dl dt:after {
+  content: ": ";
+}
+aside.menupanel dl dt,
+aside.menupanel dl dd {
+  float: left;
+}
+aside.menupanel dl dd {
+  margin-left: 0.5em;
+}
+aside.menupanel dl:after {
+  display: table;
+  content: "";
+  clear: both;
+}
+.romloader {
+  text-align: center;
+  font-size: 18px;
+  font-family: 'Roboto Mono', courier;
+  font-weight: 700;
+  height: 78vmin;
+  width: 100vmin;
+  vertical-align: middle;
+  margin: 11vmin auto;
+  background: #959595;
+  border-radius: 2vmin 2vmin 14vmin 2vmin;
+}
+.romloader i.fa {
+  display: block;
+  font-size: 120px;
+}
+.romloader fieldset {
+  height: 66vmin;
+  width: 66vmin;
+  margin: 0 auto;
+  position: relative;
+  top: 6vmin;
+  background-color: #acb651;
+}
+.romloader fieldset > div {
+  display: inline-block;
+  line-height: 66vmin;
+  letter-spacing: 2em;
+  text-align: left;
+  margin-top: 35%;
+}
+.romloader fieldset > div * {
+  line-height: 1em;
+}
+.romloader fieldset > div span {
+  letter-spacing: initial;
+}
