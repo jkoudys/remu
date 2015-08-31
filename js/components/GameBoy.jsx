@@ -1,17 +1,24 @@
 /**
- * Thin-class, showing the main components of the Greenbelt Route app
+ * The main gameboy display
  */
 
 import MenuPanel from './MenuPanel.jsx';
 import RomLoader from './RomLoader.jsx';
+import Screen from './Screen.jsx';
 
 import EmuStore from '../stores/EmuStore.js';
 
-import * as EmuActions from '../actions/EmuActions.js';
+function buildState() {
+  return {
+    loaded: EmuStore.isRomLoaded()
+  };
+}
 
 class GameBoy extends React.Component {
   constructor(props) {
-    super();
+    super(props);
+
+    this.state = buildState();
   }
 
   componentWillMount() {
@@ -23,12 +30,20 @@ class GameBoy extends React.Component {
   }
 
   _onChange() {
+    this.setState(buildState());
   }
 
   render() {
+    let screen;
+    if (this.state.loaded) {
+      screen = <Screen key="screen" />;
+    } else {
+      screen = <RomLoader key="romloader" />;
+    }
+
     return (
       <section id="gameboy">
-        <RomLoader />
+        {screen}
         <MenuPanel />
       </section>
     );

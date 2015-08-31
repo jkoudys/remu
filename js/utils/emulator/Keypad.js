@@ -1,15 +1,11 @@
-// Bind our logger
-import * as LogActions from '../../actions/LogActions.js';
-const log = LogActions.log.bind(null, 'keypad');
-
 const Keypad = {
   _keys: [0x0F, 0x0F],
   _colidx: 0,
 
-  reset: function() {
+  reset: function(cb) {
     Keypad._keys = [0x0F, 0x0F];
     Keypad._colidx = 0;
-    log('Reset.');
+    cb(null, {msg: 'Reset'});
   },
 
   rb: function() {

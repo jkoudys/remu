@@ -1,10 +1,7 @@
 import GPU from './gpu.js';
+import Z80 from './z80.js';
 import Keypad from './Keypad.js';
 import Timer from './Timer.js';
-
-// Bind our logger
-import * as LogActions from '../../actions/LogActions.js';
-const log = LogActions.log.bind(null, 'mmu');
 
 const MMU = {
   _bios: new Uint8Array([
@@ -51,7 +48,7 @@ const MMU = {
     return MMU._rom;
   },
 
-  reset() {
+  reset(cb) {
     MMU._wram = new Uint8Array(0x2000);
     MMU._eram = new Uint8Array(0x8000);
     MMU._zram = new Uint8Array(0x7f);
@@ -71,29 +68,30 @@ const MMU = {
     MMU._romoffs = 0x4000;
     MMU._ramoffs = 0;
 
-    log('Reset');
+    cb(null, {msg: 'Reset'});
   },
 
   /**
    * Load a buffer as the ROM
    * @param ArrayBuffer buffer The ROM itself
    */
-  load(buffer) {
+  load(buffer, cb) {
     MMU._rom = new Uint8Array(buffer);
     MMU._carttype = MMU._rom[0x0147];
 
-    log('ROM loaded, ' + MMU._rom.length + ' bytes');
+    cb(null, {msg: 'ROM loaded, ' + MMU._rom.length + ' bytes'});
   },
 
-  rb(addr) {
+  rb(addr, cb) {
+    // TODO: this could be _way_ simpler if simply using a DataView
     switch (addr & 0xF000) {
       // ROM bank 0
       case 0x0000:
         if (MMU._inbios) {
           if (addr < 0x0100) return MMU._bios[addr];
-          else if (Z80._r.pc == 0x0100) {
+          else if (Z80.getPC() == 0x0100) {
             MMU._inbios = 0;
-            log('Leaving BIOS');
+            cb(null, {msg: 'Leaving BIOS'});
           }
         } else {
           return MMU._rom[addr];
@@ -114,7 +112,7 @@ const MMU = {
         // VRAM
       case 0x8000:
       case 0x9000:
-        return GPU._vram[addr & 0x1FFF];
+        return GPU.getVram(addr & 0x1FFF);
 
         // External RAM
       case 0xA000:
@@ -189,6 +187,7 @@ const MMU = {
   },
 
   rw: function(addr) {
+    // TODO: this could be _way_ simpler if simply using a DataView
     return MMU.rb(addr) + (MMU.rb(addr + 1) << 8);
   },
 
@@ -248,7 +247,7 @@ const MMU = {
         // VRAM
       case 0x8000:
       case 0x9000:
-        GPU._vram[addr & 0x1FFF] = val;
+        GPU.setVram(addr & 0x1FFF, val);
         GPU.updatetile(addr & 0x1FFF, val);
         break;
 

@@ -8,6 +8,7 @@ exports.pause = pause;
 exports.reset = reset;
 exports.refreshFps = refreshFps;
 exports.receiveRom = receiveRom;
+exports.receiveCanvas = receiveCanvas;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -50,42 +51,19 @@ function receiveRom(rom, filename) {
   });
 }
 
-},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8}],2:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true
-});
-exports.log = log;
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-var _constantsEmuConstantsJs = require('../constants/EmuConstants.js');
-
-var _dispatcherAppDispatcherJs = require('../dispatcher/AppDispatcher.js');
-
-var _dispatcherAppDispatcherJs2 = _interopRequireDefault(_dispatcherAppDispatcherJs);
-
-var _storesEmuStoreJs = require('../stores/EmuStore.js');
-
-var _storesEmuStoreJs2 = _interopRequireDefault(_storesEmuStoreJs);
-
 /**
- * Add a log entry
- * @param string module
- * @param string msg
+ * Receives our canvas
+ * @param HTMLCanvasElement canvas
  */
 
-function log(component, msg) {
-  _dispatcherAppDispatcherJs2['default'].waitFor([_storesEmuStoreJs2['default'].dispatchToken]);
+function receiveCanvas(canvas) {
   _dispatcherAppDispatcherJs2['default'].dispatch({
-    type: _constantsEmuConstantsJs.ActionTypes.LOG_APPEND,
-    component: component,
-    msg: msg
+    type: _constantsEmuConstantsJs.ActionTypes.CANVAS_RECEIVE,
+    canvas: canvas
   });
 }
 
-},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8,"../stores/EmuStore.js":10}],3:[function(require,module,exports){
+},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8}],2:[function(require,module,exports){
 /**
  * GameBoy Emulator, main app
  */
@@ -109,9 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
   window.onkeyup = _utilsEmulatorKeypadJs2['default'].keyup;
 });
 
-},{"./components/GameBoy.jsx":4,"./utils/emulator/Keypad.js":14}],4:[function(require,module,exports){
+},{"./components/GameBoy.jsx":3,"./utils/emulator/Keypad.js":13}],3:[function(require,module,exports){
 /**
- * Thin-class, showing the main components of the Greenbelt Route app
+ * The main gameboy display
  */
 
 'use strict';
@@ -123,8 +101,6 @@ Object.defineProperty(exports, '__esModule', {
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -140,13 +116,19 @@ var _RomLoaderJsx = require('./RomLoader.jsx');
 
 var _RomLoaderJsx2 = _interopRequireDefault(_RomLoaderJsx);
 
+var _ScreenJsx = require('./Screen.jsx');
+
+var _ScreenJsx2 = _interopRequireDefault(_ScreenJsx);
+
 var _storesEmuStoreJs = require('../stores/EmuStore.js');
 
 var _storesEmuStoreJs2 = _interopRequireDefault(_storesEmuStoreJs);
 
-var _actionsEmuActionsJs = require('../actions/EmuActions.js');
-
-var EmuActions = _interopRequireWildcard(_actionsEmuActionsJs);
+function buildState() {
+  return {
+    loaded: _storesEmuStoreJs2['default'].isRomLoaded()
+  };
+}
 
 var GameBoy = (function (_React$Component) {
   _inherits(GameBoy, _React$Component);
@@ -154,7 +136,9 @@ var GameBoy = (function (_React$Component) {
   function GameBoy(props) {
     _classCallCheck(this, GameBoy);
 
-    _get(Object.getPrototypeOf(GameBoy.prototype), 'constructor', this).call(this);
+    _get(Object.getPrototypeOf(GameBoy.prototype), 'constructor', this).call(this, props);
+
+    this.state = buildState();
   }
 
   _createClass(GameBoy, [{
@@ -169,14 +153,23 @@ var GameBoy = (function (_React$Component) {
     }
   }, {
     key: '_onChange',
-    value: function _onChange() {}
+    value: function _onChange() {
+      this.setState(buildState());
+    }
   }, {
     key: 'render',
     value: function render() {
+      var screen = undefined;
+      if (this.state.loaded) {
+        screen = React.createElement(_ScreenJsx2['default'], { key: 'screen' });
+      } else {
+        screen = React.createElement(_RomLoaderJsx2['default'], { key: 'romloader' });
+      }
+
       return React.createElement(
         'section',
         { id: 'gameboy' },
-        React.createElement(_RomLoaderJsx2['default'], null),
+        screen,
         React.createElement(_MenuPanelJsx2['default'], null)
       );
     }
@@ -188,7 +181,7 @@ var GameBoy = (function (_React$Component) {
 exports['default'] = GameBoy;
 module.exports = exports['default'];
 
-},{"../actions/EmuActions.js":1,"../stores/EmuStore.js":10,"./MenuPanel.jsx":5,"./RomLoader.jsx":6}],5:[function(require,module,exports){
+},{"../stores/EmuStore.js":10,"./MenuPanel.jsx":4,"./RomLoader.jsx":5,"./Screen.jsx":6}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -208,10 +201,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
 var _storesEmuStoreJs = require('../stores/EmuStore.js');
 
 var _storesEmuStoreJs2 = _interopRequireDefault(_storesEmuStoreJs);
-
-var _storesLogStoreJs = require('../stores/LogStore.js');
-
-var _storesLogStoreJs2 = _interopRequireDefault(_storesLogStoreJs);
 
 // Time formatter
 var _fmt = Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
@@ -384,19 +373,24 @@ var EmulatorLog = (function (_React$Component3) {
         React.createElement(
           'table',
           null,
-          this.props.log.map(function (entry) {
+          this.props.log.map(function (entry, i) {
             return React.createElement(
               'tr',
-              null,
+              { key: 'entry' + i },
               React.createElement(
                 'td',
                 null,
-                entry.time + 'ms'
+                Math.floor(entry.time / 1000) + 's'
               ),
               React.createElement(
                 'td',
                 null,
-                entry.message
+                entry.component
+              ),
+              React.createElement(
+                'td',
+                null,
+                entry.msg
               )
             );
           })
@@ -434,13 +428,11 @@ var MenuPanel = (function (_React$Component4) {
     key: 'componentWillMount',
     value: function componentWillMount() {
       _storesEmuStoreJs2['default'].addChangeListener(this._onChange.bind(this));
-      _storesLogStoreJs2['default'].addChangeListener(this._onChange.bind(this));
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
       _storesEmuStoreJs2['default'].removeChangeListener(this._onChange);
-      _storesLogStoreJs2['default'].removeChangeListener(this._onChange);
     }
   }, {
     key: '_onChange',
@@ -524,7 +516,7 @@ var MenuPanel = (function (_React$Component4) {
           ),
           romInfo,
           React.createElement(SaveStates, null),
-          React.createElement(EmulatorLog, { log: _storesLogStoreJs2['default'].getLog() })
+          React.createElement(EmulatorLog, { log: _storesEmuStoreJs2['default'].getLog() })
         )
       );
     }
@@ -536,7 +528,7 @@ var MenuPanel = (function (_React$Component4) {
 exports['default'] = MenuPanel;
 module.exports = exports['default'];
 
-},{"../stores/EmuStore.js":10,"../stores/LogStore.js":11}],6:[function(require,module,exports){
+},{"../stores/EmuStore.js":10}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -547,6 +539,8 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
@@ -556,6 +550,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
 var _actionsEmuActionsJs = require('../actions/EmuActions.js');
 
 var EmuActions = _interopRequireWildcard(_actionsEmuActionsJs);
+
+var _ScreenJsx = require('./Screen.jsx');
+
+var _ScreenJsx2 = _interopRequireDefault(_ScreenJsx);
 
 var RomLoader = (function (_React$Component) {
   _inherits(RomLoader, _React$Component);
@@ -630,6 +628,57 @@ var RomLoader = (function (_React$Component) {
 exports['default'] = RomLoader;
 module.exports = exports['default'];
 
+},{"../actions/EmuActions.js":1,"./Screen.jsx":6}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+
+var _actionsEmuActionsJs = require("../actions/EmuActions.js");
+
+var EmuActions = _interopRequireWildcard(_actionsEmuActionsJs);
+
+var Screen = (function (_React$Component) {
+  _inherits(Screen, _React$Component);
+
+  function Screen() {
+    _classCallCheck(this, Screen);
+
+    _get(Object.getPrototypeOf(Screen.prototype), "constructor", this).apply(this, arguments);
+  }
+
+  _createClass(Screen, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      // Since we currently only support one device at a time, assume the last
+      // Screen is the one the device should render to. May never change, as
+      // multiple devices should just be multiple browser tabs.
+      window.setTimeout(EmuActions.receiveCanvas.bind(this, React.findDOMNode(this)), 0);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return React.createElement("canvas", { className: "screen" });
+    }
+  }]);
+
+  return Screen;
+})(React.Component);
+
+exports["default"] = Screen;
+module.exports = exports["default"];
+
 },{"../actions/EmuActions.js":1}],7:[function(require,module,exports){
 'use strict';
 
@@ -638,7 +687,7 @@ Object.defineProperty(exports, '__esModule', {
 });
 var ActionTypes = (function () {
   var actions = {};
-  ['ROM_RECEIVE', 'EMU_RESET', 'EMU_PAUSE', 'EMU_RUN', 'FPS_RECEIVE', 'LOG_APPEND'].forEach(function (val) {
+  ['ROM_RECEIVE', 'EMU_RESET', 'EMU_PAUSE', 'EMU_RUN', 'FPS_RECEIVE', 'CANVAS_RECEIVE', 'LOG_APPEND'].forEach(function (val) {
     actions[val] = val;
   });
   return actions;
@@ -652,7 +701,7 @@ var Dispatcher = require('flux').Dispatcher;
 
 module.exports = new Dispatcher();
 
-},{"flux":20}],9:[function(require,module,exports){
+},{"flux":19}],9:[function(require,module,exports){
 // Object.assign
 'use strict';
 
@@ -717,6 +766,10 @@ var _dispatcherAppDispatcherJs2 = _interopRequireDefault(_dispatcherAppDispatche
 
 var _constantsEmuConstantsJs = require('../constants/EmuConstants.js');
 
+var _actionsEmuActionsJs = require('../actions/EmuActions.js');
+
+var EmuActions = _interopRequireWildcard(_actionsEmuActionsJs);
+
 // z80 emu
 
 var _utilsEmulatorGpuJs = require('../utils/emulator/gpu.js');
@@ -753,6 +806,8 @@ var CHANGE_EVENT = 'change';
  */
 var _romFileName = '';
 var _frameCounter = { start: 0, frames: 0 };
+var _startTime = Date.now();
+var _log = [];
 
 /**
  * @param int _fps Target fps - no need for this to be higher than what you can see
@@ -770,6 +825,29 @@ var _runInterval;
 var _frameInterval;
 
 /**
+ * The callback for logging. Typically set with bind() before passing
+ * @param string component The "component" (in the hardware sense) being logged
+ * @param object err Callback error
+ * @param object data Data returned to log
+ */
+function logExec(component, err, data) {
+  var entry = {
+    time: Date.now() - _startTime,
+    component: component
+  };
+
+  if (err) {
+    entry.msg = err.msg;
+    entry.level = 'error';
+  } else {
+    entry.msg = data;
+    entry.level = 'info';
+  }
+
+  _log.push(entry);
+}
+
+/**
  * Pause all execution. Pause issued from emulator controls, not in-game
  */
 function pauseEmulation() {
@@ -782,12 +860,11 @@ function pauseEmulation() {
  * Reset the emulator. A hard reset, equivalent to hitting power off/on
  */
 function resetEmulation() {
-  _utilsEmulatorGpuJs2['default'].reset();
-  _utilsEmulatorMmuJs2['default'].reset();
-  _utilsEmulatorZ80Js2['default'].reset();
-  _utilsEmulatorKeypadJs2['default'].reset();
-  _utilsEmulatorTimerJs2['default'].reset();
-  _utilsEmulatorMmuJs2['default']._inbios = 0;
+  _utilsEmulatorGpuJs2['default'].reset(logExec.bind(null, 'gpu'));
+  _utilsEmulatorMmuJs2['default'].reset(logExec.bind(null, 'mmu'));
+  _utilsEmulatorZ80Js2['default'].reset(logExec.bind(null, 'z80'));
+  _utilsEmulatorKeypadJs2['default'].reset(logExec.bind(null, 'keypad'));
+  _utilsEmulatorTimerJs2['default'].reset(logExec.bind(null, 'timer'));
 
   pauseEmulation();
 }
@@ -809,7 +886,7 @@ function runEmulation() {
   _frameCounter.frames = 0;
   _frameInterval = window.setInterval(function () {
     var now = Date.now();
-    document.getElementById('fps').textContent = _frameCounter.frames / (now - _frameCounter.start) << 0;
+    EmuActions.refreshFps(_frameCounter.frames / (now - _frameCounter.start) << 0);
     _frameCounter.start = now;
     _frameCounter.frames = 0;
   }, 2000);
@@ -820,13 +897,21 @@ function runEmulation() {
  * @param ArrayBuffer buffer
  */
 function receiveRom(buffer) {
-  _utilsEmulatorMmuJs2['default'].load(buffer);
+  _utilsEmulatorMmuJs2['default'].load(buffer, logExec.bind(null, 'mmu'));
 }
 
 /**
  * Refresh our FPS counter
  */
 function receiveFps() {}
+
+/**
+ * Attach the GPU to a canvas "screen"
+ * @param HTMLCanvasElement canvas Our new screen
+ */
+function receiveCanvas(canvas) {
+  _utilsEmulatorGpuJs2['default'].attachCanvas(canvas);
+}
 
 /**
  * Execute a single 'frame' (one update of the actual screen, not the GB)
@@ -851,25 +936,30 @@ function executeFrame() {
       var ifired = _utilsEmulatorMmuJs2['default']._ie & _utilsEmulatorMmuJs2['default']._if;
       if (ifired & 0x01) {
         _utilsEmulatorMmuJs2['default']._if &= 0xFE;
-        _utilsEmulatorZ80Js2['default']._ops.RST40();
+        _utilsEmulatorZ80Js2['default'].rst(0x40);
       } else if (ifired & 0x02) {
         _utilsEmulatorMmuJs2['default']._if &= 0xFD;
-        _utilsEmulatorZ80Js2['default']._ops.RST48();
+        _utilsEmulatorZ80Js2['default'].rst(0x48);
       } else if (ifired & 0x04) {
         _utilsEmulatorMmuJs2['default']._if &= 0xFB;
-        _utilsEmulatorZ80Js2['default']._ops.RST50();
+        _utilsEmulatorZ80Js2['default'].rst(0x50);
       } else if (ifired & 0x08) {
         _utilsEmulatorMmuJs2['default']._if &= 0xF7;
-        _utilsEmulatorZ80Js2['default']._ops.RST58();
+        _utilsEmulatorZ80Js2['default'].rst(0x58);
       } else if (ifired & 0x10) {
         _utilsEmulatorMmuJs2['default']._if &= 0xEF;
-        _utilsEmulatorZ80Js2['default']._ops.RST60();
+        _utilsEmulatorZ80Js2['default'].rst(0x60);
       } else {
         _utilsEmulatorZ80Js2['default'].enableInterrupts();
       }
     }
     clockTicks += opTicks;
-    _utilsEmulatorGpuJs2['default'].checkline(opTicks);
+
+    // Only render if we have a screen to render to
+    if (_utilsEmulatorGpuJs2['default'].isAttached()) {
+      _utilsEmulatorGpuJs2['default'].checkline(opTicks);
+    }
+
     _utilsEmulatorTimerJs2['default'].inc(opTicks);
     if (_utilsEmulatorZ80Js2['default']._stop) {
       pauseEmulation();
@@ -916,20 +1006,34 @@ var EmuStore = Object.assign({}, _events.EventEmitter.prototype, {
     }
   },
 
+  isRomLoaded: function isRomLoaded() {
+    return !!_utilsEmulatorMmuJs2['default']._rom;
+  },
+
   /**
    * Get the current state of the registers
    * @return object Registers
    */
   getRegisters: function getRegisters() {
     return _utilsEmulatorZ80Js2['default'].getRegisters();
+  },
+
+  /**
+   * Get our runtime log
+   * @return {array<object>}
+   */
+  getLog: function getLog() {
+    return _log;
   }
 });
 
 EmuStore.dispatchToken = _dispatcherAppDispatcherJs2['default'].register(function (payload) {
   switch (payload.type) {
     case _constantsEmuConstantsJs.ActionTypes.ROM_RECEIVE:
+      resetEmulation();
       receiveRom(payload.rom);
       _romFileName = payload.filename;
+      runEmulation();
       EmuStore.emitChange();
       break;
     case _constantsEmuConstantsJs.ActionTypes.EMU_RESET:
@@ -947,94 +1051,17 @@ EmuStore.dispatchToken = _dispatcherAppDispatcherJs2['default'].register(functio
     case _constantsEmuConstantsJs.ActionTypes.FPS_RECEIVE:
       EmuStore.emitChange();
       break;
+    case _constantsEmuConstantsJs.ActionTypes.CANVAS_RECEIVE:
+      receiveCanvas(payload.canvas);
+      EmuStore.emitChange();
+      break;
   }
 });
 
 exports['default'] = EmuStore;
 module.exports = exports['default'];
 
-},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8,"../utils/EmuHelper.js":12,"../utils/emulator/Keypad.js":14,"../utils/emulator/Timer.js":15,"../utils/emulator/gpu.js":16,"../utils/emulator/mmu.js":17,"../utils/emulator/z80.js":18,"events":19}],11:[function(require,module,exports){
-// Flux
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true
-});
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-var _events = require('events');
-
-var _dispatcherAppDispatcherJs = require('../dispatcher/AppDispatcher.js');
-
-var _dispatcherAppDispatcherJs2 = _interopRequireDefault(_dispatcherAppDispatcherJs);
-
-var _constantsEmuConstantsJs = require('../constants/EmuConstants.js');
-
-var _EmuStoreJs = require('./EmuStore.js');
-
-var _EmuStoreJs2 = _interopRequireDefault(_EmuStoreJs);
-
-// Basic event name for basic emulator state change
-var CHANGE_EVENT = 'change';
-
-/**
- * Local variables to the store
- */
-var _log = [];
-
-/**
- * Add to the runtime log
- * @param string msg The message to save
- * @param string component Optional module name that set the message
- */
-function appendtoLog(msg, component) {
-  var entry = { time: Date.now(), name: component, msg: msg };
-  _log.push(entry);
-  console.log(entry);
-}
-
-var LogStore = Object.assign({}, _events.EventEmitter.prototype, {
-  /**
-   * @param {function} callback
-   */
-  addChangeListener: function addChangeListener(callback) {
-    this.on(CHANGE_EVENT, callback);
-  },
-
-  removeChangeListener: function removeChangeListener(callback) {
-    this.removeListener(CHANGE_EVENT, callback);
-  },
-
-  emitChange: function emitChange() {
-    this.emit(CHANGE_EVENT);
-  },
-
-  /**
-   * Gets the runtime log
-   * @return array<object>
-   */
-  getLog: function getLog() {
-    return _log;
-  }
-});
-
-LogStore.dispatchToken = _dispatcherAppDispatcherJs2['default'].register(function (payload) {
-  switch (payload.type) {
-    case _constantsEmuConstantsJs.ActionTypes.LOG_APPEND:
-      // Log our messages once we're finished dispatching the Emulator
-      _dispatcherAppDispatcherJs2['default'].waitFor([_EmuStoreJs2['default'].dispatchToken]);
-
-      appendToLog(payload.msg, payload.component);
-      LogStore.emitChange();
-      break;
-  }
-});
-
-exports['default'] = LogStore;
-module.exports = exports['default'];
-
-},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8,"./EmuStore.js":10,"events":19}],12:[function(require,module,exports){
+},{"../actions/EmuActions.js":1,"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8,"../utils/EmuHelper.js":11,"../utils/emulator/Keypad.js":13,"../utils/emulator/Timer.js":14,"../utils/emulator/gpu.js":15,"../utils/emulator/mmu.js":16,"../utils/emulator/z80.js":17,"events":18}],11:[function(require,module,exports){
 /**
  * Look for a null-terminated string over a memory extent
  * @param arraylike array The array/TypedArray to iterate through
@@ -1191,7 +1218,7 @@ function type(rom) {
   }
 }
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * Debug functions
  */
@@ -1252,30 +1279,20 @@ var instructionTable = [
 exports['default'] = Debug;
 module.exports = exports['default'];
 
-},{}],14:[function(require,module,exports){
-// Bind our logger
+},{}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
-var _actionsLogActionsJs = require('../../actions/LogActions.js');
-
-var LogActions = _interopRequireWildcard(_actionsLogActionsJs);
-
-var log = LogActions.log.bind(null, 'keypad');
-
 var Keypad = {
   _keys: [0x0F, 0x0F],
   _colidx: 0,
 
-  reset: function reset() {
+  reset: function reset(cb) {
     Keypad._keys = [0x0F, 0x0F];
     Keypad._colidx = 0;
-    log('Reset.');
+    cb(null, { msg: 'Reset' });
   },
 
   rb: function rb() {
@@ -1361,7 +1378,7 @@ var Keypad = {
 exports['default'] = Keypad;
 module.exports = exports['default'];
 
-},{"../../actions/LogActions.js":2}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * The system timer
  */
@@ -1372,8 +1389,6 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 var _mmuJs = require('./mmu.js');
@@ -1383,14 +1398,6 @@ var _mmuJs2 = _interopRequireDefault(_mmuJs);
 var _z80Js = require('./z80.js');
 
 var _z80Js2 = _interopRequireDefault(_z80Js);
-
-// Bind our logger
-
-var _actionsLogActionsJs = require('../../actions/LogActions.js');
-
-var LogActions = _interopRequireWildcard(_actionsLogActionsJs);
-
-var log = LogActions.log.bind(null, 'timer');
 
 // Basic timer registers
 var _div = 0;
@@ -1406,7 +1413,7 @@ var _clock = {
 };
 
 var Timer = {
-  reset: function reset() {
+  reset: function reset(cb) {
     _div = 0;
     _tma = 0;
     _tima = 0;
@@ -1414,7 +1421,7 @@ var Timer = {
     _clock.main = 0;
     _clock.sub = 0;
     _clock.div = 0;
-    log('Reset');
+    cb(null, 'Reset');
   },
 
   step: function step() {
@@ -1494,15 +1501,13 @@ var Timer = {
 exports['default'] = Timer;
 module.exports = exports['default'];
 
-},{"../../actions/LogActions.js":2,"./mmu.js":17,"./z80.js":18}],16:[function(require,module,exports){
+},{"./mmu.js":16,"./z80.js":17}],15:[function(require,module,exports){
 // GameBoy components
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -1514,22 +1519,34 @@ var _z80Js = require('./z80.js');
 
 var _z80Js2 = _interopRequireDefault(_z80Js);
 
-// Bind our logger
+// TODO: encapsulate vram + oam
+// Memory
+var _vram;
 
-var _actionsLogActionsJs = require('../../actions/LogActions.js');
+// Drawing area
+var _imageData;
+/**
+ * @param _screen Uint32Array Allows us to address each pixel at each index
+ */
+var _screen;
+var _canvas;
+var _palette = {};
+var _tilemap = [];
 
-var LogActions = _interopRequireWildcard(_actionsLogActionsJs);
+// Constants
+var WIDTH = 160;
+var HEIGHT = 144;
 
-var log = LogActions.log.bind(null, 'gpu');
+// Build a palette that we can assign using the js engine's native endianness
+function endFix(array) {
+  return new Uint32Array(new Uint8Array(array).buffer)[0];
+}
 
-// Image scalers
-// import hq4x from '../hq.js';
+var colors = [endFix([0xFF, 0xFF, 0xFF, 0xFF]), endFix([0xC0, 0xC0, 0xC0, 0xFF]), endFix([0x60, 0x60, 0x60, 0xFF]), endFix([0, 0, 0, 0xFF])];
 
 var GPU = {
-  _vram: null,
   _oam: null,
   _reg: [],
-  _tilemap: [],
   _objdata: [],
   _objdatasorted: [],
   _palette: {
@@ -1560,38 +1577,22 @@ var GPU = {
   _bgmapbase: 0x1800,
   _wintilebase: 0x1800,
 
-  reset: function reset() {
-    GPU._vram = new Uint8Array(0x2000);
-    GPU._oam = new Uint8Array(0xA0);
+  reset: function reset(cb) {
     var white = [0xFF, 0xFF, 0xFF, 0xFF];
-    GPU._palette.bg = new Uint8Array(white);
-    GPU._palette.obj0 = new Uint8Array(white);
-    GPU._palette.obj1 = new Uint8Array(white);
-    for (var i = 0; i < 512; i++) {
-      GPU._tilemap[i] = [];
+    // Zero out memory
+    _vram = new Uint8Array(0x2000);
+    GPU._oam = new Uint8Array(0xA0);
+    _palette.bg = new Uint8Array(white);
+    _palette.obj0 = new Uint8Array(white);
+    _palette.obj1 = new Uint8Array(white);
+    for (var i = 0; i < 0x0200; i++) {
+      _tilemap[i] = [];
       for (var j = 0; j < 8; j++) {
-        GPU._tilemap[i][j] = new Uint8Array(8);
+        _tilemap[i][j] = new Uint8Array(8);
       }
     }
 
-    log('Initialising screen');
-    var c = document.getElementById('screen');
-    if (c && c.getContext) {
-      GPU._canvas = c.getContext('2d');
-      if (!GPU._canvas) {
-        throw new Error('GPU: Canvas context could not be created.');
-      } else {
-        if (GPU._canvas.createImageData) GPU._scrn = GPU._canvas.createImageData(160, 144);else if (GPU._canvas.getImageData) GPU._scrn = GPU._canvas.getImageData(0, 0, 160, 144);else GPU._scrn = {
-          'width': 160,
-          'height': 144,
-          'data': new Array(160 * 144)
-        };
-
-        for (i = 0; i < GPU._scrn.data.length; i++) GPU._scrn.data[i] = 255;
-
-        GPU._canvas.putImageData(GPU._scrn, 0, 0);
-      }
-    }
+    GPU.blankScreen();
 
     GPU._curline = 0;
     GPU._curscan = 0;
@@ -1608,9 +1609,9 @@ var GPU = {
     GPU._winon = 0;
 
     GPU._objsize = 0;
-    for (i = 0; i < 160; i++) GPU._scanrow[i] = 0;
-
-    for (i = 0; i < 40; i++) {
+    for (var i = 0; i < WIDTH; i++) {
+      GPU._scanrow[i] = 0;
+    }for (var i = 0; i < 40; i++) {
       GPU._objdata[i] = {
         'y': -16,
         'x': -8,
@@ -1628,16 +1629,43 @@ var GPU = {
     GPU._bgmapbase = 0x1800;
     GPU._wintilebase = 0x1800;
 
-    log('Reset');
+    if (cb instanceof Function) {
+      cb(null, 'Reset');
+    }
   },
 
-  /**
-   * Apply an image scaler, e.g. hq4x
-   *
-   * @param Array srcData The source data to scale
-   * @return Array Scaled image
-   */
-  imageScale: function imageScale(srcData) {},
+  setVram: function setVram(addr, val) {
+    _vram[addr] = val;
+  },
+
+  getVram: function getVram(addr) {
+    return _vram[addr];
+  },
+
+  attachCanvas: function attachCanvas(canvas) {
+    canvas.style.width = WIDTH * 2;
+    canvas.style.height = HEIGHT;
+    _canvas = canvas.getContext('2d');
+
+    _imageData = _canvas.createImageData(WIDTH, HEIGHT);
+    _screen = new Uint32Array(_imageData.data.buffer);
+
+    GPU.blankScreen();
+  },
+
+  isAttached: function isAttached() {
+    return !!_canvas;
+  },
+
+  blankScreen: function blankScreen() {
+    if (_imageData) {
+      for (var i = 0; i < _screen.length; i++) {
+        _screen[i] = colors[3];
+      }
+
+      _canvas.putImageData(_imageData, 0, 0);
+    }
+  },
 
   checkline: function checkline(ticks) {
     GPU._modeclocks += ticks;
@@ -1648,7 +1676,7 @@ var GPU = {
           // End of hblank for last scanline; render screen
           if (GPU._curline == 143) {
             GPU._linemode = 1;
-            GPU._canvas.putImageData(GPU._scrn, 0, 0);
+            _canvas.putImageData(_imageData, 0, 0);
             _mmuJs2['default']._if |= 1;
           } else {
             GPU._linemode = 2;
@@ -1689,40 +1717,40 @@ var GPU = {
           if (GPU._lcdon) {
             if (GPU._bgon) {
               var linebase = GPU._curscan;
-              var mapbase = GPU._bgmapbase + ((GPU._curline + GPU._yscrl & 255) >> 3 << 5);
+              var mapbase = GPU._bgmapbase + ((GPU._curline + GPU._yscrl & 0xFF) >> 3 << 5);
               var y = GPU._curline + GPU._yscrl & 7;
               var x = GPU._xscrl & 7;
-              var t = GPU._xscrl >> 3 & 31;
-              var pixel;
-              var w = 160;
+              var t = GPU._xscrl >> 3 & 0x1F;
+              var pixel = undefined;
+              var w = WIDTH;
 
               if (GPU._bgtilebase) {
-                var tile = GPU._vram[mapbase + t];
-                if (tile < 128) tile = 256 + tile;
-                var tilerow = GPU._tilemap[tile][y];
+                var tile = _vram[mapbase + t];
+                if (tile < 0x80) tile = 0x100 + tile;
+                var tilerow = _tilemap[tile][y];
                 do {
-                  GPU._scanrow[160 - x] = tilerow[x];
-                  GPU._scrn.data[linebase + 3] = GPU._palette.bg[tilerow[x]];
+                  GPU._scanrow[WIDTH - x] = tilerow[x];
+                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = t + 1 & 31;
+                    t = t + 1 & 0x1F;
                     x = 0;
-                    tile = GPU._vram[mapbase + t];
-                    if (tile < 128) tile = 256 + tile;
-                    tilerow = GPU._tilemap[tile][y];
+                    tile = _vram[mapbase + t];
+                    if (tile < 0x80) tile = 0x100 + tile;
+                    tilerow = _tilemap[tile][y];
                   }
                   linebase += 4;
                 } while (--w);
               } else {
-                var tilerow = GPU._tilemap[GPU._vram[mapbase + t]][y];
+                var tilerow = _tilemap[_vram[mapbase + t]][y];
                 do {
-                  GPU._scanrow[160 - x] = tilerow[x];
-                  GPU._scrn.data[linebase + 3] = GPU._palette.bg[tilerow[x]];
+                  GPU._scanrow[WIDTH - x] = tilerow[x];
+                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = t + 1 & 31;
+                    t = t + 1 & 0x1F;
                     x = 0;
-                    tilerow = GPU._tilemap[GPU._vram[mapbase + t]][y];
+                    tilerow = _tilemap[_vram[mapbase + t]][y];
                   }
                   linebase += 4;
                 } while (--w);
@@ -1730,37 +1758,35 @@ var GPU = {
             }
             if (GPU._objon) {
               var cnt = 0;
-              if (GPU._objsize) {
-                for (var i = 0; i < 40; i++) {}
-              } else {
-                var tilerow;
-                var obj;
-                var pal;
-                var pixel;
-                var x;
+              if (!GPU._objsize) {
+                var tilerow = undefined;
+                var obj = undefined;
+                var pal = undefined;
+                var pixel = undefined;
+                var x = undefined;
                 var linebase = GPU._curscan;
                 for (var i = 0; i < 40; i++) {
                   obj = GPU._objdatasorted[i];
                   if (obj.y <= GPU._curline && obj.y + 8 > GPU._curline) {
-                    if (obj.yflip) tilerow = GPU._tilemap[obj.tile][7 - (GPU._curline - obj.y)];else tilerow = GPU._tilemap[obj.tile][GPU._curline - obj.y];
+                    if (obj.yflip) tilerow = _tilemap[obj.tile][7 - (GPU._curline - obj.y)];else tilerow = _tilemap[obj.tile][GPU._curline - obj.y];
 
-                    if (obj.palette) pal = GPU._palette.obj1;else pal = GPU._palette.obj0;
+                    if (obj.palette) pal = _palette.obj1;else pal = _palette.obj0;
 
-                    linebase = GPU._curline * 160 + obj.x << 2;
+                    linebase = GPU._curline * WIDTH + obj.x << 2;
                     if (obj.xflip) {
                       for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < 160) {
+                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
                           if (tilerow[7 - x] && (obj.prio || !GPU._scanrow[x])) {
-                            GPU._scrn.data[linebase + 3] = pal[tilerow[7 - x]];
+                            _imageData.data[linebase] = pal[tilerow[7 - x]];
                           }
                         }
                         linebase += 4;
                       }
                     } else {
                       for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < 160) {
+                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
                           if (tilerow[x] && (obj.prio || !GPU._scanrow[x])) {
-                            GPU._scrn.data[linebase + 3] = pal[tilerow[x]];
+                            _imageData.data[linebase] = pal[tilerow[x]];
                           }
                         }
                         linebase += 4;
@@ -1779,17 +1805,18 @@ var GPU = {
   },
 
   updatetile: function updatetile(addr, val) {
+    // Round to even-byte extents, since there are 16-pixel tiles
     var saddr = addr;
     if (addr & 1) {
       saddr--;
       addr--;
     }
-    var tile = addr >> 4 & 511;
+    var tile = addr >> 4 & 0x01FF;
     var y = addr >> 1 & 7;
     var sx;
     for (var x = 0; x < 8; x++) {
       sx = 1 << 7 - x;
-      GPU._tilemap[tile][y][x] = (GPU._vram[saddr] & sx ? 1 : 0) | (GPU._vram[saddr + 1] & sx ? 2 : 0);
+      _tilemap[tile][y][x] = (_vram[saddr] & sx ? 1 : 0) | (_vram[saddr + 1] & sx ? 2 : 0);
     }
   },
 
@@ -1874,8 +1901,8 @@ var GPU = {
 
       // OAM DMA
       case 6:
-        var v;
-        for (var i = 0; i < 160; i++) {
+        var v = undefined;
+        for (var i = 0; i < WIDTH; i++) {
           v = _mmuJs2['default'].rb((val << 8) + i);
           GPU._oam[i] = v;
           GPU.updateoam(0xFE00 + i, v);
@@ -1887,16 +1914,16 @@ var GPU = {
         for (var i = 0; i < 4; i++) {
           switch (val >> i * 2 & 3) {
             case 0:
-              GPU._palette.bg[i] = 0xFF;
+              _palette.bg[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.bg[i] = 0xC0;
+              _palette.bg[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.bg[i] = 0x60;
+              _palette.bg[i] = 0x60;
               break;
             case 3:
-              GPU._palette.bg[i] = 0;
+              _palette.bg[i] = 0;
               break;
           }
         }
@@ -1907,16 +1934,16 @@ var GPU = {
         for (var i = 0; i < 4; i++) {
           switch (val >> i * 2 & 3) {
             case 0:
-              GPU._palette.obj0[i] = 0xFF;
+              _palette.obj0[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.obj0[i] = 0xC0;
+              _palette.obj0[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.obj0[i] = 0x60;
+              _palette.obj0[i] = 0x60;
               break;
             case 3:
-              GPU._palette.obj0[i] = 0;
+              _palette.obj0[i] = 0;
               break;
           }
         }
@@ -1927,16 +1954,16 @@ var GPU = {
         for (var i = 0; i < 4; i++) {
           switch (val >> i * 2 & 3) {
             case 0:
-              GPU._palette.obj1[i] = 0xFF;
+              _palette.obj1[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.obj1[i] = 0xC0;
+              _palette.obj1[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.obj1[i] = 0x60;
+              _palette.obj1[i] = 0x60;
               break;
             case 3:
-              GPU._palette.obj1[i] = 0;
+              _palette.obj1[i] = 0;
               break;
           }
         }
@@ -1948,23 +1975,22 @@ var GPU = {
 exports['default'] = GPU;
 module.exports = exports['default'];
 
-//    var scaled = hq4x(srcData, GPU._canvas.width, GPU._canvas.height);
-//    return new ImageData(scaled, 640, 576);
-
-},{"../../actions/LogActions.js":2,"./mmu.js":17,"./z80.js":18}],17:[function(require,module,exports){
+},{"./mmu.js":16,"./z80.js":17}],16:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 var _gpuJs = require('./gpu.js');
 
 var _gpuJs2 = _interopRequireDefault(_gpuJs);
+
+var _z80Js = require('./z80.js');
+
+var _z80Js2 = _interopRequireDefault(_z80Js);
 
 var _KeypadJs = require('./Keypad.js');
 
@@ -1973,14 +1999,6 @@ var _KeypadJs2 = _interopRequireDefault(_KeypadJs);
 var _TimerJs = require('./Timer.js');
 
 var _TimerJs2 = _interopRequireDefault(_TimerJs);
-
-// Bind our logger
-
-var _actionsLogActionsJs = require('../../actions/LogActions.js');
-
-var LogActions = _interopRequireWildcard(_actionsLogActionsJs);
-
-var log = LogActions.log.bind(null, 'mmu');
 
 var MMU = {
   _bios: new Uint8Array([0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E, 0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0, 0x47, 0x11, 0x04, 0x01, 0x21, 0x10, 0x80, 0x1A, 0xCD, 0x95, 0x00, 0xCD, 0x96, 0x00, 0x13, 0x7B, 0xFE, 0x34, 0x20, 0xF3, 0x11, 0xD8, 0x00, 0x06, 0x08, 0x1A, 0x13, 0x22, 0x23, 0x05, 0x20, 0xF9, 0x3E, 0x19, 0xEA, 0x10, 0x99, 0x21, 0x2F, 0x99, 0x0E, 0x0C, 0x3D, 0x28, 0x08, 0x32, 0x0D, 0x20, 0xF9, 0x2E, 0x0F, 0x18, 0xF3, 0x67, 0x3E, 0x64, 0x57, 0xE0, 0x42, 0x3E, 0x91, 0xE0, 0x40, 0x04, 0x1E, 0x02, 0x0E, 0x0C, 0xF0, 0x44, 0xFE, 0x90, 0x20, 0xFA, 0x0D, 0x20, 0xF7, 0x1D, 0x20, 0xF2, 0x0E, 0x13, 0x24, 0x7C, 0x1E, 0x83, 0xFE, 0x62, 0x28, 0x06, 0x1E, 0xC1, 0xFE, 0x64, 0x20, 0x06, 0x7B, 0xE2, 0x0C, 0x3E, 0x87, 0xF2, 0xF0, 0x42, 0x90, 0xE0, 0x42, 0x15, 0x20, 0xD2, 0x05, 0x20, 0x4F, 0x16, 0x20, 0x18, 0xCB, 0x4F, 0x06, 0x04, 0xC5, 0xCB, 0x11, 0x17, 0xC1, 0xCB, 0x11, 0x17, 0x05, 0x20, 0xF5, 0x22, 0x23, 0x22, 0x23, 0xC9, 0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E, 0x3c, 0x42, 0xB9, 0xA5, 0xB9, 0xA5, 0x42, 0x4C, 0x21, 0x04, 0x01, 0x11, 0xA8, 0x00, 0x1A, 0x13, 0xBE, 0x20, 0xFE, 0x23, 0x7D, 0xFE, 0x34, 0x20, 0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50]),
@@ -2010,7 +2028,7 @@ var MMU = {
     return MMU._rom;
   },
 
-  reset: function reset() {
+  reset: function reset(cb) {
     MMU._wram = new Uint8Array(0x2000);
     MMU._eram = new Uint8Array(0x8000);
     MMU._zram = new Uint8Array(0x7f);
@@ -2030,28 +2048,29 @@ var MMU = {
     MMU._romoffs = 0x4000;
     MMU._ramoffs = 0;
 
-    log('Reset');
+    cb(null, { msg: 'Reset' });
   },
 
   /**
    * Load a buffer as the ROM
    * @param ArrayBuffer buffer The ROM itself
    */
-  load: function load(buffer) {
+  load: function load(buffer, cb) {
     MMU._rom = new Uint8Array(buffer);
     MMU._carttype = MMU._rom[0x0147];
 
-    log('ROM loaded, ' + MMU._rom.length + ' bytes');
+    cb(null, { msg: 'ROM loaded, ' + MMU._rom.length + ' bytes' });
   },
 
-  rb: function rb(addr) {
+  rb: function rb(addr, cb) {
+    // TODO: this could be _way_ simpler if simply using a DataView
     switch (addr & 0xF000) {
       // ROM bank 0
       case 0x0000:
         if (MMU._inbios) {
-          if (addr < 0x0100) return MMU._bios[addr];else if (Z80._r.pc == 0x0100) {
+          if (addr < 0x0100) return MMU._bios[addr];else if (_z80Js2['default'].getPC() == 0x0100) {
             MMU._inbios = 0;
-            log('Leaving BIOS');
+            cb(null, { msg: 'Leaving BIOS' });
           }
         } else {
           return MMU._rom[addr];
@@ -2072,7 +2091,7 @@ var MMU = {
       // VRAM
       case 0x8000:
       case 0x9000:
-        return _gpuJs2['default']._vram[addr & 0x1FFF];
+        return _gpuJs2['default'].getVram(addr & 0x1FFF);
 
       // External RAM
       case 0xA000:
@@ -2147,6 +2166,7 @@ var MMU = {
   },
 
   rw: function rw(addr) {
+    // TODO: this could be _way_ simpler if simply using a DataView
     return MMU.rb(addr) + (MMU.rb(addr + 1) << 8);
   },
 
@@ -2206,7 +2226,7 @@ var MMU = {
       // VRAM
       case 0x8000:
       case 0x9000:
-        _gpuJs2['default']._vram[addr & 0x1FFF] = val;
+        _gpuJs2['default'].setVram(addr & 0x1FFF, val);
         _gpuJs2['default'].updatetile(addr & 0x1FFF, val);
         break;
 
@@ -2300,7 +2320,7 @@ var MMU = {
 exports['default'] = MMU;
 module.exports = exports['default'];
 
-},{"../../actions/LogActions.js":2,"./Keypad.js":14,"./Timer.js":15,"./gpu.js":16}],18:[function(require,module,exports){
+},{"./Keypad.js":13,"./Timer.js":14,"./gpu.js":15,"./z80.js":17}],17:[function(require,module,exports){
 /**
  * jsGB: Z80 core
  * Joshua Koudys, Jul 2015
@@ -2313,8 +2333,6 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 var _mmuJs = require('./mmu.js');
@@ -2324,14 +2342,6 @@ var _mmuJs2 = _interopRequireDefault(_mmuJs);
 var _DebugJs = require('./Debug.js');
 
 var _DebugJs2 = _interopRequireDefault(_DebugJs);
-
-// Bind our logger
-
-var _actionsLogActionsJs = require('../../actions/LogActions.js');
-
-var LogActions = _interopRequireWildcard(_actionsLogActionsJs);
-
-var log = LogActions.log.bind(null, 'z80');
 
 /**
  * Flag constants
@@ -2397,7 +2407,7 @@ var Z80 = {
   // TODO: add speed modes for GBC support
   speed: 4190000,
 
-  reset: function reset() {
+  reset: function reset(cb) {
     //CPU Registers and Flags:
     regAF[0] = 0x01B0;
     regBC[0] = 0x0013;
@@ -2409,7 +2419,7 @@ var Z80 = {
     Z80._halt = 0;
     Z80._stop = 0;
     interruptsEnabled = true;
-    log('Reset');
+    cb(null, { msg: 'Reset' });
   },
 
   isInterruptable: function isInterruptable() {
@@ -2424,7 +2434,7 @@ var Z80 = {
     interruptsEnabled = false;
   },
 
-  enabledInterrupts: function enabledInterrupts() {
+  enableInterrupts: function enableInterrupts() {
     interruptsEnabled = true;
   },
 
@@ -2435,6 +2445,21 @@ var Z80 = {
    */
   exec: function exec() {
     return _map[_mmuJs2['default'].rb(regPC[0]++)]();
+  },
+
+  /**
+   * reset to an address
+   */
+  rst: function rst(addr) {
+    _ops.rst(addr);
+  },
+
+  /**
+   * Get the program counter
+   * @return int
+   */
+  getPC: function getPC() {
+    return regPC[0];
   },
 
   /**
@@ -3634,7 +3659,7 @@ var _ops = {
   },
 
   /**
-   * Call routine set at address
+   * Restart at address
    * @param int addr Address of routine to run
    * @return int Clock ticks
    */
@@ -3688,7 +3713,7 @@ var _ops = {
   XX: function XX(instruction) {
     /*Undefined map entry*/
     var opc = regPC[0] - 1;
-    log('Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
+    console.log('Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
     Z80._stop = 1;
   }
 };
@@ -3783,7 +3808,7 @@ module.exports = exports['default'];
 
 // TODO restore registers
 
-},{"../../actions/LogActions.js":2,"./Debug.js":13,"./mmu.js":17}],19:[function(require,module,exports){
+},{"./Debug.js":12,"./mmu.js":16}],18:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4086,7 +4111,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /**
  * Copyright (c) 2014-2015, Facebook, Inc.
  * All rights reserved.
@@ -4098,7 +4123,7 @@ function isUndefined(arg) {
 
 module.exports.Dispatcher = require('./lib/Dispatcher')
 
-},{"./lib/Dispatcher":21}],21:[function(require,module,exports){
+},{"./lib/Dispatcher":20}],20:[function(require,module,exports){
 /*
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -4350,7 +4375,7 @@ var _prefix = 'ID_';
 
 module.exports = Dispatcher;
 
-},{"./invariant":22}],22:[function(require,module,exports){
+},{"./invariant":21}],21:[function(require,module,exports){
 /**
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -4405,4 +4430,4 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 
-},{}]},{},[9,3]);
+},{}]},{},[9,2]);

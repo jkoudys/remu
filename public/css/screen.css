@@ -204,6 +204,10 @@ aside.menupanel dl:after {
   background: #959595;
   border-radius: 2vmin 2vmin 14vmin 2vmin;
 }
+.romloader canvas {
+  height: 100%;
+  margin: 16px 0 0 20px;
+}
 .romloader i.fa {
   display: block;
   font-size: 120px;

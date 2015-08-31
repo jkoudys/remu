@@ -1,4 +1,5 @@
 import * as EmuActions from '../actions/EmuActions.js';
+import Screen from './Screen.jsx';
 
 class RomLoader extends React.Component {
   handleLoadFile(ev) {

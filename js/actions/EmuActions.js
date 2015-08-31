@@ -32,3 +32,14 @@ export function receiveRom(rom, filename) {
     filename: filename
   });
 }
+
+/**
+ * Receives our canvas
+ * @param HTMLCanvasElement canvas
+ */
+export function receiveCanvas(canvas) {
+  AppDispatcher.dispatch({
+    type: ActionTypes.CANVAS_RECEIVE,
+    canvas: canvas
+  });
+}

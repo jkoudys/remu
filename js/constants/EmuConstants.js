@@ -6,6 +6,7 @@ export const ActionTypes = (function() {
     'EMU_PAUSE',
     'EMU_RUN',
     'FPS_RECEIVE',
+    'CANVAS_RECEIVE',
     'LOG_APPEND'
   ].forEach((val) => { actions[val] = val; });
   return actions;

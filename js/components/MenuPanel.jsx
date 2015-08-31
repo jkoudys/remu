@@ -1,6 +1,4 @@
 import EmuStore from '../stores/EmuStore.js';
-import LogStore from '../stores/LogStore.js';
-
 
 // Time formatter
 const _fmt = Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'});
@@ -61,11 +59,12 @@ class EmulatorLog extends React.Component {
       <section id="emulatorlog">
         <h3><i className="fa fa-list" /> Log</h3>
         <table>
-          {this.props.log.map(function(entry) {
+          {this.props.log.map(function(entry, i) {
             return (
-              <tr>
-                <td>{entry.time + 'ms'}</td>
-                <td>{entry.message}</td>
+              <tr key={'entry' + i}>
+                <td>{Math.floor(entry.time / 1000) + 's'}</td>
+                <td>{entry.component}</td>
+                <td>{entry.msg}</td>
               </tr>
               );
           })}
@@ -93,12 +92,10 @@ class MenuPanel extends React.Component {
 
   componentWillMount() {
     EmuStore.addChangeListener(this._onChange.bind(this));
-    LogStore.addChangeListener(this._onChange.bind(this));
   }
 
   componentWillUnmount() {
     EmuStore.removeChangeListener(this._onChange);
-    LogStore.removeChangeListener(this._onChange);
   }
 
   _onChange() {
@@ -142,7 +139,7 @@ class MenuPanel extends React.Component {
           </section>
           {romInfo}
           <SaveStates />
-          <EmulatorLog log={LogStore.getLog()} />
+          <EmulatorLog log={EmuStore.getLog()} />
         </section>
       </aside>
     );

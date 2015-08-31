@@ -51,9 +51,6 @@ const LogStore = Object.assign({}, EventEmitter.prototype, {
 LogStore.dispatchToken = AppDispatcher.register(function(payload) {
   switch (payload.type) {
     case ActionTypes.LOG_APPEND:
-      // Log our messages once we're finished dispatching the Emulator
-      AppDispatcher.waitFor([EmuStore.dispatchToken]);
-
       appendToLog(payload.msg, payload.component);
       LogStore.emitChange();
       break;

@@ -8,7 +8,6 @@ import EmuStore from '../stores/EmuStore.js';
  * @param string msg
  */
 export function log(component, msg) {
-  AppDispatcher.waitFor([EmuStore.dispatchToken]);
   AppDispatcher.dispatch({
     type: ActionTypes.LOG_APPEND,
     component: component,

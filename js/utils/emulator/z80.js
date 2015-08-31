@@ -7,10 +7,6 @@
 import MMU from './mmu.js';
 import Debug from './Debug.js';
 
-// Bind our logger
-import * as LogActions from '../../actions/LogActions.js';
-const log = LogActions.log.bind(null, 'z80');
-
 /**
  * Flag constants
  * I have faith that a modern JIT, especially once es6 rolls around, will
@@ -75,7 +71,7 @@ const Z80 = {
   // TODO: add speed modes for GBC support
   speed: 4190000,
 
-  reset() {
+  reset(cb) {
     //CPU Registers and Flags:
     regAF[0] = 0x01B0;
     regBC[0] = 0x0013;
@@ -87,7 +83,7 @@ const Z80 = {
     Z80._halt = 0;
     Z80._stop = 0;
     interruptsEnabled = true;
-    log('Reset');
+    cb(null, {msg: 'Reset'});
   },
 
   isInterruptable() {
@@ -102,7 +98,7 @@ const Z80 = {
     interruptsEnabled = false;
   },
 
-  enabledInterrupts() {
+  enableInterrupts() {
     interruptsEnabled = true;
   },
 
@@ -113,6 +109,21 @@ const Z80 = {
    */
   exec() {
     return _map[MMU.rb(regPC[0]++)]();
+  },
+
+  /**
+   * reset to an address
+   */
+  rst(addr) {
+    _ops.rst(addr);
+  },
+
+  /**
+   * Get the program counter
+   * @return int
+   */
+  getPC() {
+    return regPC[0];
   },
 
   /**
@@ -1314,7 +1325,7 @@ const _ops = {
   },
 
   /**
-   * Call routine set at address
+   * Restart at address
    * @param int addr Address of routine to run
    * @return int Clock ticks
    */
@@ -1372,7 +1383,7 @@ const _ops = {
   XX(instruction) {
     /*Undefined map entry*/
     var opc = regPC[0] - 1;
-    log('Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
+    console.log('Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
     Z80._stop = 1;
   }
 };
