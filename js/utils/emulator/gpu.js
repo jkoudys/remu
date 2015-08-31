@@ -2,14 +2,39 @@
 import MMU from './mmu.js';
 import Z80 from './z80.js';
 
-// Image scalers
-// import hq4x from '../hq.js';
+// TODO: encapsulate vram + oam
+// Memory
+var _vram;
+
+// Drawing area
+var _imageData;
+/**
+ * @param _screen Uint32Array Allows us to address each pixel at each index
+ */
+var _screen;
+var _canvas;
+const _palette = {};
+const _tilemap = [];
+
+// Constants
+const WIDTH = 160;
+const HEIGHT = 144;
+
+// Build a palette that we can assign using the js engine's native endianness
+function endFix(array) {
+  return (new Uint32Array(new Uint8Array(array).buffer))[0];
+}
+
+const colors = [
+  endFix([0xFF, 0xFF, 0xFF, 0xFF]),
+  endFix([0xC0, 0xC0, 0xC0, 0xFF]),
+  endFix([0x60, 0x60, 0x60, 0xFF]),
+  endFix([0, 0, 0, 0xFF])
+];
 
 const GPU = {
-  _vram: null,
   _oam: null,
   _reg: [],
-  _tilemap: [],
   _objdata: [],
   _objdatasorted: [],
   _palette: {
@@ -40,43 +65,22 @@ const GPU = {
   _bgmapbase: 0x1800,
   _wintilebase: 0x1800,
 
-  reset: function(cb) {
-    GPU._vram = new Uint8Array(0x2000);
+  reset(cb) {
+    const white = [0xFF, 0xFF, 0xFF, 0xFF];
+    // Zero out memory
+    _vram = new Uint8Array(0x2000);
     GPU._oam = new Uint8Array(0xA0);
-    var white = [0xFF, 0xFF, 0xFF, 0xFF];
-    GPU._palette.bg = new Uint8Array(white);
-    GPU._palette.obj0 = new Uint8Array(white);
-    GPU._palette.obj1 = new Uint8Array(white);
-    for (var i = 0; i < 512; i++) {
-      GPU._tilemap[i] = [];
+    _palette.bg = new Uint8Array(white);
+    _palette.obj0 = new Uint8Array(white);
+    _palette.obj1 = new Uint8Array(white);
+    for (let i = 0; i < 0x0200; i++) {
+      _tilemap[i] = [];
       for (let j = 0; j < 8; j++) {
-        GPU._tilemap[i][j] = new Uint8Array(8);
+        _tilemap[i][j] = new Uint8Array(8);
       }
     }
 
-    var c = document.getElementById('screen');
-    if (c && c.getContext) {
-      GPU._canvas = c.getContext('2d');
-      if (!GPU._canvas) {
-        throw new Error('GPU: Canvas context could not be created.');
-      } else {
-        if (GPU._canvas.createImageData)
-          GPU._scrn = GPU._canvas.createImageData(160, 144);
-        else if (GPU._canvas.getImageData)
-          GPU._scrn = GPU._canvas.getImageData(0, 0, 160, 144);
-        else
-          GPU._scrn = {
-            'width': 160,
-            'height': 144,
-            'data': new Array(160 * 144)
-          };
-
-        for (i = 0; i < GPU._scrn.data.length; i++)
-          GPU._scrn.data[i] = 255;
-
-        GPU._canvas.putImageData(GPU._scrn, 0, 0);
-      }
-    }
+    GPU.blankScreen();
 
     GPU._curline = 0;
     GPU._curscan = 0;
@@ -93,9 +97,9 @@ const GPU = {
     GPU._winon = 0;
 
     GPU._objsize = 0;
-    for (i = 0; i < 160; i++) GPU._scanrow[i] = 0;
+    for (let i = 0; i < WIDTH; i++) GPU._scanrow[i] = 0;
 
-    for (i = 0; i < 40; i++) {
+    for (let i = 0; i < 40; i++) {
       GPU._objdata[i] = {
         'y': -16,
         'x': -8,
@@ -113,21 +117,45 @@ const GPU = {
     GPU._bgmapbase = 0x1800;
     GPU._wintilebase = 0x1800;
 
-    cb(null, 'Reset');
+    if (cb instanceof Function) {
+      cb(null, 'Reset');
+    }
   },
 
-  /**
-   * Apply an image scaler, e.g. hq4x
-   *
-   * @param Array srcData The source data to scale
-   * @return Array Scaled image
-   */
-  imageScale: function(srcData) {
-//    var scaled = hq4x(srcData, GPU._canvas.width, GPU._canvas.height);
-//    return new ImageData(scaled, 640, 576);
+  setVram(addr, val) {
+    _vram[addr] = val;
   },
 
-  checkline: function(ticks) {
+  getVram(addr) {
+    return _vram[addr];
+  },
+
+  attachCanvas(canvas) {
+    canvas.style.width = WIDTH * 2;
+    canvas.style.height = HEIGHT;
+    _canvas = canvas.getContext('2d');
+
+    _imageData = _canvas.createImageData(WIDTH, HEIGHT);
+    _screen = new Uint32Array(_imageData.data.buffer);
+
+    GPU.blankScreen();
+  },
+
+  isAttached() {
+    return !!_canvas;
+  },
+
+  blankScreen() {
+    if (_imageData) {
+      for (let i = 0; i < _screen.length; i++) {
+        _screen[i] = colors[3];
+      }
+
+      _canvas.putImageData(_imageData, 0, 0);
+    }
+  },
+
+  checkline(ticks) {
     GPU._modeclocks += ticks;
     switch (GPU._linemode) {
       // In hblank
@@ -136,7 +164,7 @@ const GPU = {
           // End of hblank for last scanline; render screen
           if (GPU._curline == 143) {
             GPU._linemode = 1;
-            GPU._canvas.putImageData(GPU._scrn, 0, 0);
+            _canvas.putImageData(_imageData, 0, 0);
             MMU._if |= 1;
           } else {
             GPU._linemode = 2;
@@ -176,83 +204,81 @@ const GPU = {
           GPU._linemode = 0;
           if (GPU._lcdon) {
             if (GPU._bgon) {
-              var linebase = GPU._curscan;
-              var mapbase = GPU._bgmapbase + ((((GPU._curline + GPU._yscrl) & 255) >> 3) << 5);
-              var y = (GPU._curline + GPU._yscrl) & 7;
-              var x = GPU._xscrl & 7;
-              var t = (GPU._xscrl >> 3) & 31;
-              var pixel;
-              var w = 160;
+              let linebase = GPU._curscan;
+              let mapbase = GPU._bgmapbase + ((((GPU._curline + GPU._yscrl) & 0xFF) >> 3) << 5);
+              let y = (GPU._curline + GPU._yscrl) & 7;
+              let x = GPU._xscrl & 7;
+              let t = (GPU._xscrl >> 3) & 0x1F;
+              let pixel;
+              let w = WIDTH;
 
               if (GPU._bgtilebase) {
-                var tile = GPU._vram[mapbase + t];
-                if (tile < 128) tile = 256 + tile;
-                var tilerow = GPU._tilemap[tile][y];
+                let tile = _vram[mapbase + t];
+                if (tile < 0x80) tile = 0x100 + tile;
+                let tilerow = _tilemap[tile][y];
                 do {
-                  GPU._scanrow[160 - x] = tilerow[x];
-                  GPU._scrn.data[linebase + 3] = GPU._palette.bg[tilerow[x]];
+                  GPU._scanrow[WIDTH - x] = tilerow[x];
+                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = (t + 1) & 31;
+                    t = (t + 1) & 0x1F;
                     x = 0;
-                    tile = GPU._vram[mapbase + t];
-                    if (tile < 128) tile = 256 + tile;
-                    tilerow = GPU._tilemap[tile][y];
+                    tile = _vram[mapbase + t];
+                    if (tile < 0x80) tile = 0x100 + tile;
+                    tilerow = _tilemap[tile][y];
                   }
                   linebase += 4;
                 } while (--w);
               } else {
-                var tilerow = GPU._tilemap[GPU._vram[mapbase + t]][y];
+                let tilerow = _tilemap[_vram[mapbase + t]][y];
                 do {
-                  GPU._scanrow[160 - x] = tilerow[x];
-                  GPU._scrn.data[linebase + 3] = GPU._palette.bg[tilerow[x]];
+                  GPU._scanrow[WIDTH - x] = tilerow[x];
+                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = (t + 1) & 31;
+                    t = (t + 1) & 0x1F;
                     x = 0;
-                    tilerow = GPU._tilemap[GPU._vram[mapbase + t]][y];
+                    tilerow = _tilemap[_vram[mapbase + t]][y];
                   }
                   linebase += 4;
                 } while (--w);
               }
             }
             if (GPU._objon) {
-              var cnt = 0;
-              if (GPU._objsize) {
-                for (var i = 0; i < 40; i++) {}
-              } else {
-                var tilerow;
-                var obj;
-                var pal;
-                var pixel;
-                var x;
-                var linebase = GPU._curscan;
-                for (var i = 0; i < 40; i++) {
+              let cnt = 0;
+              if (!GPU._objsize) {
+                let tilerow;
+                let obj;
+                let pal;
+                let pixel;
+                let x;
+                let linebase = GPU._curscan;
+                for (let i = 0; i < 40; i++) {
                   obj = GPU._objdatasorted[i];
                   if (obj.y <= GPU._curline && (obj.y + 8) > GPU._curline) {
                     if (obj.yflip)
-                      tilerow = GPU._tilemap[obj.tile][7 - (GPU._curline - obj.y)];
+                      tilerow = _tilemap[obj.tile][7 - (GPU._curline - obj.y)];
                     else
-                      tilerow = GPU._tilemap[obj.tile][GPU._curline - obj.y];
+                      tilerow = _tilemap[obj.tile][GPU._curline - obj.y];
 
-                    if (obj.palette) pal = GPU._palette.obj1;
-                    else pal = GPU._palette.obj0;
+                    if (obj.palette) pal = _palette.obj1;
+                    else pal = _palette.obj0;
 
-                    linebase = (GPU._curline * 160 + obj.x) << 2;
+                    linebase = (GPU._curline * WIDTH + obj.x) << 2;
                     if (obj.xflip) {
                       for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < 160) {
+                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
                           if (tilerow[7 - x] && (obj.prio || !GPU._scanrow[x])) {
-                            GPU._scrn.data[linebase + 3] = pal[tilerow[7 - x]];
+                            _imageData.data[linebase] = pal[tilerow[7 - x]];
                           }
                         }
                         linebase += 4;
                       }
                     } else {
                       for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < 160) {
+                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
                           if (tilerow[x] && (obj.prio || !GPU._scanrow[x])) {
-                            GPU._scrn.data[linebase + 3] = pal[tilerow[x]];
+                            _imageData.data[linebase] = pal[tilerow[x]];
                           }
                         }
                         linebase += 4;
@@ -270,22 +296,23 @@ const GPU = {
     }
   },
 
-  updatetile: function(addr, val) {
+  updatetile(addr, val) {
+    // Round to even-byte extents, since there are 16-pixel tiles
     var saddr = addr;
     if (addr & 1) {
       saddr--;
       addr--;
     }
-    var tile = (addr >> 4) & 511;
+    var tile = (addr >> 4) & 0x01FF;
     var y = (addr >> 1) & 7;
     var sx;
     for (var x = 0; x < 8; x++) {
       sx = 1 << (7 - x);
-      GPU._tilemap[tile][y][x] = ((GPU._vram[saddr] & sx) ? 1 : 0) | ((GPU._vram[saddr + 1] & sx) ? 2 : 0);
+      _tilemap[tile][y][x] = ((_vram[saddr] & sx) ? 1 : 0) | ((_vram[saddr + 1] & sx) ? 2 : 0);
     }
   },
 
-  updateoam: function(addr, val) {
+  updateoam(addr, val) {
     addr -= 0xFE00;
     var obj = addr >> 2;
     if (obj < 40) {
@@ -315,7 +342,7 @@ const GPU = {
     });
   },
 
-  rb: function(addr) {
+  rb(addr) {
     var gaddr = addr - 0xFF40;
     switch (gaddr) {
       case 0:
@@ -346,7 +373,7 @@ const GPU = {
     }
   },
 
-  wb: function(addr, val) {
+  wb(addr, val) {
     var gaddr = addr - 0xFF40;
     GPU._reg[gaddr] = val;
     switch (gaddr) {
@@ -372,8 +399,8 @@ const GPU = {
 
         // OAM DMA
       case 6:
-        var v;
-        for (var i = 0; i < 160; i++) {
+        let v;
+        for (let i = 0; i < WIDTH; i++) {
           v = MMU.rb((val << 8) + i);
           GPU._oam[i] = v;
           GPU.updateoam(0xFE00 + i, v);
@@ -382,19 +409,19 @@ const GPU = {
 
         // BG palette mapping
       case 7:
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
           switch ((val >> (i * 2)) & 3) {
             case 0:
-              GPU._palette.bg[i] = 0xFF;
+              _palette.bg[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.bg[i] = 0xC0;
+              _palette.bg[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.bg[i] = 0x60;
+              _palette.bg[i] = 0x60;
               break;
             case 3:
-              GPU._palette.bg[i] = 0;
+              _palette.bg[i] = 0;
               break;
           }
         }
@@ -402,19 +429,19 @@ const GPU = {
 
         // OBJ0 palette mapping
       case 8:
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
           switch ((val >> (i * 2)) & 3) {
             case 0:
-              GPU._palette.obj0[i] = 0xFF;
+              _palette.obj0[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.obj0[i] = 0xC0;
+              _palette.obj0[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.obj0[i] = 0x60;
+              _palette.obj0[i] = 0x60;
               break;
             case 3:
-              GPU._palette.obj0[i] = 0;
+              _palette.obj0[i] = 0;
               break;
           }
         }
@@ -422,19 +449,19 @@ const GPU = {
 
         // OBJ1 palette mapping
       case 9:
-        for (var i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; i++) {
           switch ((val >> (i * 2)) & 3) {
             case 0:
-              GPU._palette.obj1[i] = 0xFF;
+              _palette.obj1[i] = 0xFF;
               break;
             case 1:
-              GPU._palette.obj1[i] = 0xC0;
+              _palette.obj1[i] = 0xC0;
               break;
             case 2:
-              GPU._palette.obj1[i] = 0x60;
+              _palette.obj1[i] = 0x60;
               break;
             case 3:
-              GPU._palette.obj1[i] = 0;
+              _palette.obj1[i] = 0;
               break;
           }
         }
