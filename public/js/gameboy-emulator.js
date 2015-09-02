@@ -1522,6 +1522,8 @@ var _z80Js2 = _interopRequireDefault(_z80Js);
 // TODO: encapsulate vram + oam
 // Memory
 var _vram;
+var _tileMap0;
+var _tileMap1;
 
 // Drawing area
 var _imageData;
@@ -1529,20 +1531,29 @@ var _imageData;
  * @param _screen Uint32Array Allows us to address each pixel at each index
  */
 var _screen;
-var _canvas;
+var _context;
 var _palette = {};
-var _tilemap = [];
+var _tileSet = [];
+
+// The background is one big map, so it makes sense to manage in its own canvas
+var _bgLayer;
+var _bgCtx;
 
 // Constants
 var WIDTH = 160;
 var HEIGHT = 144;
+var ADDR_TILES = 0x0000;
+var ADDR_BGMAP0 = 0x1800;
+var ADDR_BGMAP1 = 0x1C00;
 
 // Build a palette that we can assign using the js engine's native endianness
 function endFix(array) {
   return new Uint32Array(new Uint8Array(array).buffer)[0];
 }
 
-var colors = [endFix([0xFF, 0xFF, 0xFF, 0xFF]), endFix([0xC0, 0xC0, 0xC0, 0xFF]), endFix([0x60, 0x60, 0x60, 0xFF]), endFix([0, 0, 0, 0xFF])];
+var _colors = [endFix([0xFF, 0xFF, 0xFF, 0xFF]), endFix([0xC0, 0xC0, 0xC0, 0xFF]), endFix([0x60, 0x60, 0x60, 0xFF]), endFix([0, 0, 0, 0xFF])];
+
+var _greys = [0xFF, 0xC0, 0x60, 0];
 
 var GPU = {
   _oam: null,
@@ -1557,7 +1568,6 @@ var GPU = {
   _scanrow: [],
 
   _curline: 0,
-  _curscan: 0,
   _linemode: 0,
   _modeclocks: 0,
 
@@ -1573,29 +1583,33 @@ var GPU = {
 
   _objsize: 0,
 
-  _bgtilebase: 0x0000,
-  _bgmapbase: 0x1800,
-  _wintilebase: 0x1800,
-
   reset: function reset(cb) {
     var white = [0xFF, 0xFF, 0xFF, 0xFF];
     // Zero out memory
     _vram = new Uint8Array(0x2000);
+    _tileMap0 = _vram.subarray(0x1800, 0x1C00);
+
     GPU._oam = new Uint8Array(0xA0);
     _palette.bg = new Uint8Array(white);
     _palette.obj0 = new Uint8Array(white);
     _palette.obj1 = new Uint8Array(white);
-    for (var i = 0; i < 0x0200; i++) {
-      _tilemap[i] = [];
-      for (var j = 0; j < 8; j++) {
-        _tilemap[i][j] = new Uint8Array(8);
-      }
+
+    // Setup an offscreen background, since this has a bunch of tiles
+    _bgLayer = document.createElement('canvas');
+    _bgLayer.width = 256;
+    _bgLayer.height = 256;
+    _bgCtx = _bgLayer.getContext('2d');
+
+    // Build a bunch of new 8x8 tiles in our tilemap
+    for (var i = 0; i < 0x200; i++) {
+      _tileSet[i] = new ImageData(8, 8);
     }
 
+    // Blank the screen
     GPU.blankScreen();
 
+    // Init flags
     GPU._curline = 0;
-    GPU._curscan = 0;
     GPU._linemode = 2;
     GPU._modeclocks = 0;
     GPU._yscrl = 0;
@@ -1624,18 +1638,24 @@ var GPU = {
       };
     }
 
-    // Set to values expected by BIOS, to start
-    GPU._bgtilebase = 0x0000;
-    GPU._bgmapbase = 0x1800;
-    GPU._wintilebase = 0x1800;
-
     if (cb instanceof Function) {
       cb(null, 'Reset');
     }
   },
 
+  /**
+   * Update the video ram
+   */
   setVram: function setVram(addr, val) {
     _vram[addr] = val;
+
+    // For performance, update our rendered tiles with the vram gets updated
+    if (addr >= ADDR_BGMAP0) {
+      GPU.updateBackground(addr);
+    } else {
+      GPU.updateTile(addr, val);
+      //      GPU.renderBackground();
+    }
   },
 
   getVram: function getVram(addr) {
@@ -1643,31 +1663,53 @@ var GPU = {
   },
 
   attachCanvas: function attachCanvas(canvas) {
-    canvas.style.width = WIDTH * 2;
-    canvas.style.height = HEIGHT;
-    _canvas = canvas.getContext('2d');
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    _context = canvas.getContext('2d');
 
-    _imageData = _canvas.createImageData(WIDTH, HEIGHT);
+    _imageData = _context.createImageData(WIDTH, HEIGHT);
     _screen = new Uint32Array(_imageData.data.buffer);
 
     GPU.blankScreen();
   },
 
   isAttached: function isAttached() {
-    return !!_canvas;
+    return !!_context;
   },
 
   blankScreen: function blankScreen() {
     if (_imageData) {
       for (var i = 0; i < _screen.length; i++) {
-        _screen[i] = colors[3];
+        _screen[i] = _colors[3];
       }
 
-      _canvas.putImageData(_imageData, 0, 0);
+      _context.putImageData(_imageData, 0, 0);
     }
   },
 
+  renderBackground: function renderBackground() {
+    // TODO: support partial-background updates
+    for (var tid = 0, x = 0, y = 0, len = _tileMap0.length; tid < len; tid++) {
+      _bgCtx.putImageData(_tileSet[_tileMap0[tid]], x, y);
+      x += 8;
+      if (x > 255) {
+        x = 0;
+        y += 8;
+      }
+    }
+  },
+
+  // Update a single tile
+  updateBackground: function updateBackground(addr) {
+    var tid = addr - ADDR_BGMAP0;
+    _bgCtx.putImageData(_tileSet[_tileMap0[tid]], tid % 32 << 3, tid >> 5 << 3);
+  },
+
   checkline: function checkline(ticks) {
+    // TODO: emulate scanline rendering, by returning a partial canvas. Some games
+    // rely on scanline magic to achieve cool effects, but simple games should
+    // work without them. Ideally this could be turned on/off on a per/rom basis.
+    // Non-scanline rendering is faster and smoother.
     GPU._modeclocks += ticks;
     switch (GPU._linemode) {
       // In hblank
@@ -1676,13 +1718,13 @@ var GPU = {
           // End of hblank for last scanline; render screen
           if (GPU._curline == 143) {
             GPU._linemode = 1;
-            _canvas.putImageData(_imageData, 0, 0);
+            _context.putImageData(_imageData, 0, 0);
+            _context.drawImage(_bgLayer, GPU._xscrl, GPU._yscrl);
             _mmuJs2['default']._if |= 1;
           } else {
             GPU._linemode = 2;
           }
           GPU._curline++;
-          GPU._curscan += 640;
           GPU._modeclocks = 0;
         }
         break;
@@ -1694,7 +1736,6 @@ var GPU = {
           GPU._curline++;
           if (GPU._curline > 153) {
             GPU._curline = 0;
-            GPU._curscan = 0;
             GPU._linemode = 2;
           }
         }
@@ -1714,65 +1755,69 @@ var GPU = {
         if (GPU._modeclocks >= 43) {
           GPU._modeclocks = 0;
           GPU._linemode = 0;
+          /*
           if (GPU._lcdon) {
             if (GPU._bgon) {
-              var linebase = GPU._curscan;
-              var mapbase = GPU._bgmapbase + ((GPU._curline + GPU._yscrl & 0xFF) >> 3 << 5);
-              var y = GPU._curline + GPU._yscrl & 7;
-              var x = GPU._xscrl & 7;
-              var t = GPU._xscrl >> 3 & 0x1F;
-              var pixel = undefined;
-              var w = WIDTH;
-
-              if (GPU._bgtilebase) {
-                var tile = _vram[mapbase + t];
+              let linebase = GPU._curscan;
+              let mapbase = GPU._bgmapbase + ((((GPU._curline + GPU._yscrl) & 0xFF) >> 3) << 5);
+              let y = (GPU._curline + GPU._yscrl) & 7;
+              let x = GPU._xscrl & 7;
+              let t = (GPU._xscrl >> 3) & 0x1F;
+              let pixel;
+              let w = WIDTH;
+               if (GPU._bgtilebase) {
+                let tile = _vram[mapbase + t];
                 if (tile < 0x80) tile = 0x100 + tile;
-                var tilerow = _tilemap[tile][y];
+                let tilerow = _tileSet[tile][y];
                 do {
                   GPU._scanrow[WIDTH - x] = tilerow[x];
                   _imageData.data[linebase] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = t + 1 & 0x1F;
+                    t = (t + 1) & 0x1F;
                     x = 0;
                     tile = _vram[mapbase + t];
                     if (tile < 0x80) tile = 0x100 + tile;
-                    tilerow = _tilemap[tile][y];
+                    tilerow = _tileSet[tile][y];
                   }
                   linebase += 4;
                 } while (--w);
               } else {
-                var tilerow = _tilemap[_vram[mapbase + t]][y];
+                let tilerow = _tileSet[_vram[mapbase + t]][y];
                 do {
                   GPU._scanrow[WIDTH - x] = tilerow[x];
                   _imageData.data[linebase] = _palette.bg[tilerow[x]];
+                  _imageData.data[linebase+1] = _palette.bg[tilerow[x]];
+                  _imageData.data[linebase+2] = _palette.bg[tilerow[x]];
                   x++;
                   if (x == 8) {
-                    t = t + 1 & 0x1F;
+                    t = (t + 1) & 0x1F;
                     x = 0;
-                    tilerow = _tilemap[_vram[mapbase + t]][y];
+                    tilerow = _tileSet[_vram[mapbase + t]][y];
                   }
                   linebase += 4;
                 } while (--w);
               }
             }
             if (GPU._objon) {
-              var cnt = 0;
+              let cnt = 0;
               if (!GPU._objsize) {
-                var tilerow = undefined;
-                var obj = undefined;
-                var pal = undefined;
-                var pixel = undefined;
-                var x = undefined;
-                var linebase = GPU._curscan;
-                for (var i = 0; i < 40; i++) {
+                let tilerow;
+                let obj;
+                let pal;
+                let pixel;
+                let x;
+                let linebase = GPU._curscan;
+                for (let i = 0; i < 40; i++) {
                   obj = GPU._objdatasorted[i];
-                  if (obj.y <= GPU._curline && obj.y + 8 > GPU._curline) {
-                    if (obj.yflip) tilerow = _tilemap[obj.tile][7 - (GPU._curline - obj.y)];else tilerow = _tilemap[obj.tile][GPU._curline - obj.y];
-
-                    if (obj.palette) pal = _palette.obj1;else pal = _palette.obj0;
-
-                    linebase = GPU._curline * WIDTH + obj.x << 2;
+                  if (obj.y <= GPU._curline && (obj.y + 8) > GPU._curline) {
+                    if (obj.yflip)
+                      tilerow = _tileSet[obj.tile][7 - (GPU._curline - obj.y)];
+                    else
+                      tilerow = _tileSet[obj.tile][GPU._curline - obj.y];
+                     if (obj.palette) pal = _palette.obj1;
+                    else pal = _palette.obj0;
+                     linebase = (GPU._curline * WIDTH + obj.x) << 2;
                     if (obj.xflip) {
                       for (x = 0; x < 8; x++) {
                         if (obj.x + x >= 0 && obj.x + x < WIDTH) {
@@ -1799,24 +1844,41 @@ var GPU = {
               }
             }
           }
+          */
         }
         break;
     }
   },
 
-  updatetile: function updatetile(addr, val) {
-    // Round to even-byte extents, since there are 16-pixel tiles
-    var saddr = addr;
-    if (addr & 1) {
-      saddr--;
-      addr--;
-    }
-    var tile = addr >> 4 & 0x01FF;
-    var y = addr >> 1 & 7;
+  updateTile: function updateTile(addr, val) {
+    /** Round down to even-byte extents, since GBs store a pixel colour's low bit
+     * and high bit across 2 bytes. e.g.
+     * BYTE0: 00101100
+     * BYTE1: 10100100
+     * Actually represents 8 pixels: [10, 00, 11, 00, 01, 11, 00, 00]
+     * Since it's 2-bits, the palette is 4 colours.
+     */
+    var saddr = addr & 0xFFFE;
+
+    // Each tile is 16 bytes (2 bytes => 8 pixels)
+    var tile = saddr >> 4 & 0x01FF;
+
+    // Lookup which row of the tile this address refers to
+    var y = saddr >> 1 & 7;
     var sx;
-    for (var x = 0; x < 8; x++) {
-      sx = 1 << 7 - x;
-      _tilemap[tile][y][x] = (_vram[saddr] & sx ? 1 : 0) | (_vram[saddr + 1] & sx ? 2 : 0);
+
+    // Grab the subarray for the line we're updating
+    // ImageData is 4 bytes per pixel, so each line is 4 bytes * 8 pixels / line * line
+    var line = _tileSet[tile].data.subarray(y << 5, 1 + y << 5);
+
+    // X is cartesian, sx is the bit offset to mask
+    for (var x = 0, _sx = 0x80; x < 32; x += 4, _sx = _sx >> 1) {
+      // Grab the grey by mapping 0-3, taken from 2 bits in vram, to our palette
+      var grey = _greys[(_vram[saddr] & _sx ? 1 : 0) | (_vram[saddr + 1] & _sx ? 2 : 0)];
+      line[x] = grey;
+      line[x + 1] = grey;
+      line[x + 2] = grey;
+      line[x + 3] = 0xFF;
     }
   },
 
@@ -1912,60 +1974,22 @@ var GPU = {
       // BG palette mapping
       case 7:
         for (var i = 0; i < 4; i++) {
-          switch (val >> i * 2 & 3) {
-            case 0:
-              _palette.bg[i] = 0xFF;
-              break;
-            case 1:
-              _palette.bg[i] = 0xC0;
-              break;
-            case 2:
-              _palette.bg[i] = 0x60;
-              break;
-            case 3:
-              _palette.bg[i] = 0;
-              break;
-          }
+          // Only 2-bits used for palette
+          _palette.bg[i] = _colors[val >> i * 2 & 3];
         }
         break;
 
       // OBJ0 palette mapping
       case 8:
         for (var i = 0; i < 4; i++) {
-          switch (val >> i * 2 & 3) {
-            case 0:
-              _palette.obj0[i] = 0xFF;
-              break;
-            case 1:
-              _palette.obj0[i] = 0xC0;
-              break;
-            case 2:
-              _palette.obj0[i] = 0x60;
-              break;
-            case 3:
-              _palette.obj0[i] = 0;
-              break;
-          }
+          _palette.obj0[i] = _colors[val >> i * 2 & 3];
         }
         break;
 
       // OBJ1 palette mapping
       case 9:
         for (var i = 0; i < 4; i++) {
-          switch (val >> i * 2 & 3) {
-            case 0:
-              _palette.obj1[i] = 0xFF;
-              break;
-            case 1:
-              _palette.obj1[i] = 0xC0;
-              break;
-            case 2:
-              _palette.obj1[i] = 0x60;
-              break;
-            case 3:
-              _palette.obj1[i] = 0;
-              break;
-          }
+          _palette.obj1[i] = _colors[val >> i * 2 & 3];
         }
         break;
     }
@@ -2227,7 +2251,6 @@ var MMU = {
       case 0x8000:
       case 0x9000:
         _gpuJs2['default'].setVram(addr & 0x1FFF, val);
-        _gpuJs2['default'].updatetile(addr & 0x1FFF, val);
         break;
 
       // External RAM
@@ -2312,7 +2335,7 @@ var MMU = {
   },
 
   ww: function ww(addr, val) {
-    MMU.wb(addr, val & 255);
+    MMU.wb(addr, val & 0xFF);
     MMU.wb(addr + 1, val >> 8);
   }
 };

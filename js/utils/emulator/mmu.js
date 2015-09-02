@@ -248,7 +248,6 @@ const MMU = {
       case 0x8000:
       case 0x9000:
         GPU.setVram(addr & 0x1FFF, val);
-        GPU.updatetile(addr & 0x1FFF, val);
         break;
 
         // External RAM
@@ -333,7 +332,7 @@ const MMU = {
   },
 
   ww: function(addr, val) {
-    MMU.wb(addr, val & 255);
+    MMU.wb(addr, val & 0xFF);
     MMU.wb(addr + 1, val >> 8);
   }
 };
