@@ -4,81 +4,64 @@ import LogStore from '../stores/LogStore.js';
 // Time formatter
 const _fmt = Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'});
 
-class RomInfo extends React.Component {
-  render() {
-    return (
-      <section id="rominfo">
-        <h3><i className="fa fa-table" /> {this.props.name || this.props.filename}</h3>
-        <dl>
-          <dt>Filename</dt>
-          <dd>{this.props.filename}</dd>
-          <dt>Size</dt>
-          <dd>{(this.props.size >> 10) + ' KiB'}</dd>
-          <dt>Supported Systems</dt>
-          <dd>{this.props.systems.join(', ')}</dd>
-          <dt>Type</dt>
-          <dd>{this.props.type}</dd>
-        </dl>
-      </section>
-    );
-  }
-}
+const RomInfo = props => (
+  <section id="rominfo">
+    <h3>
+      <i className="fa fa-table" /> {props.name || props.filename}
+    </h3>
+    <dl>
+      <dt>Filename</dt>
+      <dd>{props.filename}</dd>
+      <dt>Size</dt>
+      <dd>{(props.size >> 10) + ' KiB'}</dd>
+      <dt>Supported Systems</dt>
+      <dd>{props.systems.join(', ')}</dd>
+      <dt>Type</dt>
+      <dd>{props.type}</dd>
+    </dl>
+  </section>
+);
 
-class SaveStates extends React.Component {
-  render() {
-    // TODO: get array from localStorage
-    // We'll use the state.id to get its cache key
-    var states = [
-      {time: Date.now() - 1000, id: 123}
-    ];
+const SaveStates = props => (
+  <section id="savestates">
+    <h3>
+      <i className="fa fa-database" /> Save Games
+    </h3>
+    <ul>
+      {props.saves.map(save => <li key={save.time}>><a className="loadsave">{_fmt.format(save.time)}</a></li>)}
+      <li>
+        <a className="newsave">Save New State</a>
+      </li>
+    </ul>
+    <fieldset>
+      <button title="Download battery save">
+        <i className="fa fa-download" />
+      </button>
+      <button title="Upload battery save">
+        <i className="fa fa-upload" />
+      </button>
+    </fieldset>
+  </section>
+);
 
-    return (
-      <section id="savestates">
-        <h3><i className="fa fa-database" /> Save Games</h3>
-        <ul>
-          {states.map(function(state) {
-            return <li key={state.time}>><a className="loadstate">{_fmt.format(state.time)}</a></li>;
-          })}
-          <li><a className="newstate">Save New State</a></li>
-        </ul>
-        <fieldset>
-          <button title="Download battery save">
-            <i className="fa fa-download" />
-          </button>
-          <button title="Upload battery save">
-            <i className="fa fa-upload" />
-          </button>
-        </fieldset>
-      </section>
-    );
-  }
-}
+const EmulatorLog = props => (
+  <section id="emulatorlog">
+    <h3>
+      <i className="fa fa-list" /> Log
+    </h3>
+    <table>
+      {this.props.log.map((entry, i) => (
+        <tr key={'entry' + i}>
+          <td>{Math.floor((entry.time - props.log[0].time) / 1000) + 's'}</td>
+          <td>{entry.component}</td>
+          <td>{entry.msg}</td>
+        </tr>
+      ))}
+    </table>
+  </section>
+);
 
-class EmulatorLog extends React.Component {
-  constructor() {
-    super();
-    this.state = {startTime: Date.now()};
-  }
-
-  render() {
-    return (
-      <section id="emulatorlog">
-        <h3><i className="fa fa-list" /> Log</h3>
-        <table>
-          {this.props.log.map((entry, i) =>
-              <tr key={'entry' + i}>
-                <td>{Math.floor((entry.time - this.state.startTime) / 1000) + 's'}</td>
-                <td>{entry.component}</td>
-                <td>{entry.msg}</td>
-              </tr>
-          )}
-        </table>
-      </section>
-    );
-  }
-}
-
-class MenuPanel extends React.Component {
+export default class MenuPanel extends React.Component {
   constructor() {
     super();
     this.state = {
@@ -121,9 +104,9 @@ class MenuPanel extends React.Component {
   }
 
   render() {
-    var menuToggle;
-    var back;
-    var romInfo;
+    let menuToggle;
+    let back;
+    let romInfo;
 
     if (!this.state.open) {
       menuToggle = <button key="menutoggle" className="menutoggle" onClick={this.handleOpen}><i className="fa fa-chevron-left" /> menu</button>;
@@ -155,12 +138,10 @@ class MenuPanel extends React.Component {
             </nav>
           </section>
           {romInfo}
-          <SaveStates />
+          <SaveStates saves={[{time: Date.now() - 1000, id: 123}]} />
           <EmulatorLog log={this.state.log} />
         </section>
       </aside>
     );
   }
 }
-
-export default MenuPanel;

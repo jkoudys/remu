@@ -20,31 +20,31 @@ const CHANGE_EVENT = 'change';
 /**
  * Local variables to the store
  */
-var _romFileName = '';
+let _romFileName = '';
 const _frameCounter = {start: 0, frames: 0};
-var _startTime = Date.now();
+let _startTime = Date.now();
 
 /**
  * @param int _fps Target fps - no need for this to be higher than what you can see
  * TODO: make this configurable, and potentially auto-set from WebGL-reported
  * framerate.
  */
-var _fps = 60;
+let _fps = 60;
 
 /**
  * setInterval IDs for polling processes
  * @param int _runInterval The interval of the actively running emulator
  * @param int _frameInterval The interval we poll to count FPS
  */
-var _runInterval;
-var _frameInterval;
+let _runInterval;
+let _frameInterval;
 
 /**
  * Pause all execution. Pause issued from emulator controls, not in-game
  */
 function pauseEmulation() {
-  window.clearInterval(_runInterval);
-  window.clearInterval(_frameInterval);
+  clearInterval(_runInterval);
+  clearInterval(_frameInterval);
   Z80._stop = 1;
 }
 
@@ -76,8 +76,8 @@ function runEmulation() {
   // Poll to see how many frames we've rendered
   _frameCounter.start = Date.now();
   _frameCounter.frames = 0;
-  _frameInterval = window.setInterval(function() {
-    var now = Date.now();
+  _frameInterval = window.setInterval(() => {
+    const now = Date.now();
     EmuActions.refreshFps((_frameCounter.frames / (now - _frameCounter.start)) << 0);
     _frameCounter.start = now;
     _frameCounter.frames = 0;
@@ -114,9 +114,10 @@ function executeFrame() {
   // frame we update to the canvas. Calculated as the number of GB cycles to
   // run between each emulator screen update.
   // (frames/s) / (clock speed in Hz) => GB clock ticks to run
-  var fclock = Z80.speed / _fps;
-  var clockTicks = 0;
-  var opTicks = 0;
+  let fclock = Z80.speed / _fps;
+  let clockTicks = 0;
+  let opTicks = 0;
+
   do {
     if (Z80._halt) {
       opTicks = 1;
@@ -124,9 +125,9 @@ function executeFrame() {
       opTicks = Z80.exec();
     }
     if (Z80.isInterruptable() && MMU._ie && MMU._if) {
+      let ifired = MMU._ie & MMU._if;
       Z80._halt = false;
       Z80.disableInterrupts();
-      var ifired = MMU._ie & MMU._if;
       if (ifired & 0x01) {
         MMU._if &= 0xFE;
         Z80.rst(0x40);

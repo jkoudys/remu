@@ -67,7 +67,7 @@ const regA = new Uint8Array(registers, 7, 1);
 let interruptsEnabled = true;
 
 // CPU halt mode flags
-let _halt = false,;
+let _halt = false;
 let _stop = false;
 
 // Clock speed, in Hz
