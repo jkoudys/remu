@@ -1,11 +1,14 @@
+// Flux
+import {log} from '../../actions/LogActions.js';
+
 const Keypad = {
   _keys: [0x0F, 0x0F],
   _colidx: 0,
 
-  reset: function(cb) {
+  reset: function() {
     Keypad._keys = [0x0F, 0x0F];
     Keypad._colidx = 0;
-    cb(null, {msg: 'Reset'});
+    setTimeout(log, 1, 'keypad', 'Reset');
   },
 
   rb: function() {

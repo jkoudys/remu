@@ -23,7 +23,6 @@ const CHANGE_EVENT = 'change';
 var _romFileName = '';
 const _frameCounter = {start: 0, frames: 0};
 var _startTime = Date.now();
-const _log = [];
 
 /**
  * @param int _fps Target fps - no need for this to be higher than what you can see
@@ -41,29 +40,6 @@ var _runInterval;
 var _frameInterval;
 
 /**
- * The callback for logging. Typically set with bind() before passing
- * @param string component The "component" (in the hardware sense) being logged
- * @param object err Callback error
- * @param object data Data returned to log
- */
-function logExec(component, err, data) {
-  var entry = {
-    time: Date.now() - _startTime,
-    component: component
-  };
-
-  if (err) {
-    entry.msg = err.msg;
-    entry.level = 'error';
-  } else {
-    entry.msg = data;
-    entry.level = 'info';
-  }
-
-  _log.push(entry);
-}
-
-/**
  * Pause all execution. Pause issued from emulator controls, not in-game
  */
 function pauseEmulation() {
@@ -76,11 +52,11 @@ function pauseEmulation() {
  * Reset the emulator. A hard reset, equivalent to hitting power off/on
  */
 function resetEmulation() {
-  GPU.reset(logExec.bind(null, 'gpu'));
-  MMU.reset(logExec.bind(null, 'mmu'));
-  Z80.reset(logExec.bind(null, 'z80'));
-  Keypad.reset(logExec.bind(null, 'keypad'));
-  Timer.reset(logExec.bind(null, 'timer'));
+  GPU.reset();
+  MMU.reset();
+  Z80.reset();
+  Keypad.reset();
+  Timer.reset();
 
   pauseEmulation();
 }
@@ -113,7 +89,7 @@ function runEmulation() {
  * @param ArrayBuffer buffer
  */
 function receiveRom(buffer) {
-  MMU.load(buffer, logExec.bind(null, 'mmu'));
+  MMU.load(buffer);
 }
 
 /**

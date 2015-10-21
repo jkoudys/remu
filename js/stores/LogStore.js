@@ -17,8 +17,8 @@ const _log = [];
  * @param string msg The message to save
  * @param string component Optional module name that set the message
  */
-function appendtoLog(msg, component) {
-    let entry = {time: Date.now(), name: component, msg: msg};
+function appendToLog(msg, component) {
+    let entry = {time: Date.now(), component: component, msg: msg};
     _log.push(entry);
     console.log(entry);
 }

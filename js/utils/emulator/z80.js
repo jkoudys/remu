@@ -7,6 +7,9 @@
 import MMU from './mmu.js';
 import Debug from './Debug.js';
 
+// Flux
+import {log} from '../../actions/LogActions.js';
+
 /**
  * Flag constants
  * I have faith that a modern JIT, especially once es6 rolls around, will
@@ -39,117 +42,118 @@ const F_OP = 0x40;
 
 // Backwards-ordering allows pairing of registers as little-endian numbers
 // L H E D C B F A PC SP
-var registers = new ArrayBuffer(12);
+const registers = new ArrayBuffer(12);
 
 // Address the byte-boundaries. Downside is, everything needs a [0], but
 // the plus side is, actual uints in JS!
-var regHL = new Uint16Array(registers, 0, 1);
-var regDE = new Uint16Array(registers, 2, 1);
-var regBC = new Uint16Array(registers, 4, 1);
-var regAF = new Uint16Array(registers, 6, 1);
-var regPC = new Uint16Array(registers, 8, 1);
-var regSP = new Uint16Array(registers, 10, 1);
+const regHL = new Uint16Array(registers, 0, 1);
+const regDE = new Uint16Array(registers, 2, 1);
+const regBC = new Uint16Array(registers, 4, 1);
+const regAF = new Uint16Array(registers, 6, 1);
+const regPC = new Uint16Array(registers, 8, 1);
+const regSP = new Uint16Array(registers, 10, 1);
 
 // Address 8-bit boundaries
-var regL = new Uint8Array(registers, 0, 1);
-var regH = new Uint8Array(registers, 1, 1);
-var regE = new Uint8Array(registers, 2, 1);
-var regD = new Uint8Array(registers, 3, 1);
-var regC = new Uint8Array(registers, 4, 1);
-var regB = new Uint8Array(registers, 5, 1);
-var regF = new Uint8Array(registers, 6, 1);
-var regA = new Uint8Array(registers, 7, 1);
+const regL = new Uint8Array(registers, 0, 1);
+const regH = new Uint8Array(registers, 1, 1);
+const regE = new Uint8Array(registers, 2, 1);
+const regD = new Uint8Array(registers, 3, 1);
+const regC = new Uint8Array(registers, 4, 1);
+const regB = new Uint8Array(registers, 5, 1);
+const regF = new Uint8Array(registers, 6, 1);
+const regA = new Uint8Array(registers, 7, 1);
 
 // The Interrupts Enabled flag
-var interruptsEnabled = true;
+let interruptsEnabled = true;
 
-const Z80 = {
-  _halt: false,
-  _stop: false,
+// CPU halt mode flags
+let _halt = false,;
+let _stop = false;
 
-  // Clock speed, in Hz
-  // TODO: add speed modes for GBC support
-  speed: 4190000,
+// Clock speed, in Hz
+// TODO: add speed modes for GBC support
+let speed = 4190000;
 
-  reset(cb) {
-    //CPU Registers and Flags:
-    regAF[0] = 0x01B0;
-    regBC[0] = 0x0013;
-    regDE[0] = 0x00D8;
-    regHL[0] = 0x014D;
-    regSP[0] = 0xFFFE;
-    regPC[0] = 0x0100;
+function reset() {
+  //CPU Registers and Flags:
+  regAF[0] = 0x01B0;
+  regBC[0] = 0x0013;
+  regDE[0] = 0x00D8;
+  regHL[0] = 0x014D;
+  regSP[0] = 0xFFFE;
+  regPC[0] = 0x0100;
 
-    Z80._halt = 0;
-    Z80._stop = 0;
-    interruptsEnabled = true;
-    cb(null, {msg: 'Reset'});
-  },
+  Z80._halt = 0;
+  Z80._stop = 0;
+  interruptsEnabled = true;
+  setTimeout(log, 1, 'z80', 'Reset');
+}
 
-  isInterruptable() {
-    return interruptsEnabled;
-  },
+function isInterruptable() {
+  return interruptsEnabled;
+}
 
-  isHalted() {
-    return Z80._halt;
-  },
+function isHalted() {
+  return Z80._halt;
+}
 
-  disableInterrupts() {
-    interruptsEnabled = false;
-  },
+function disableInterrupts() {
+  interruptsEnabled = false;
+}
 
-  enableInterrupts() {
-    interruptsEnabled = true;
-  },
+function enableInterrupts() {
+  interruptsEnabled = true;
+}
 
-  /**
-   * Execute the opcode pointed to by the program counter, and increment
-   * the counter to the next code.
-   * @return int Clock ticks
-   */
-  exec() {
-    return _map[MMU.rb(regPC[0]++)]();
-  },
+/**
+ * Execute the opcode pointed to by the program counter, and increment
+ * the counter to the next code.
+ * @return int Clock ticks
+ */
+function exec() {
+  return _map[MMU.rb(regPC[0]++)]();
+}
 
-  /**
-   * reset to an address
-   */
-  rst(addr) {
-    _ops.rst(addr);
-  },
+/**
+ * reset to an address
+ */
+function rst(addr) {
+  _ops.rst(addr);
+}
 
-  /**
-   * Get the program counter
-   * @return int
-   */
-  getPC() {
-    return regPC[0];
-  },
+/**
+ * Get the program counter
+ * @return int
+ */
+function getPC() {
+  return regPC[0];
+}
 
-  /**
-   * Get a nicely-formatted object with the registers state
-   * @return object
-   */
-  getRegisters() {
-    return {
-      a: regA[0],
-      b: regB[0],
-      c: regC[0],
-      d: regD[0],
-      e: regE[0],
-      f: regF[0],
-      hl: regHL[0],
-      sp: regSP[0],
-      pc: regPC[0],
-      flags: {
-        zero: !!(regF[0] & F_ZERO),
-        carry: !!(regF[0] & F_CARRY),
-        hcarry: !!(regF[0] & F_HCARRY),
-        subtract: !!(regF[0] & F_OP)
-      }
-    };
-  }
-};
+/**
+ * Get a nicely-formatted object with the registers state
+ * @return object
+ */
+function  getRegisters() {
+  return {
+    a: regA[0],
+    b: regB[0],
+    c: regC[0],
+    d: regD[0],
+    e: regE[0],
+    f: regF[0],
+    hl: regHL[0],
+    sp: regSP[0],
+    pc: regPC[0],
+    flags: {
+      zero: !!(regF[0] & F_ZERO),
+      carry: !!(regF[0] & F_CARRY),
+      hcarry: !!(regF[0] & F_HCARRY),
+      subtract: !!(regF[0] & F_OP)
+    }
+  };
+}
+
+export default {reset, getRegisters};
 
 const _ops = {
   /*--- Load/store ---*/
@@ -248,13 +252,14 @@ const _ops = {
   },
 
   LDHLmm() {
-    var i = MMU.rw(regPC[0]);
+    let i = MMU.rw(regPC[0]);
     regPC[0] += 2;
     regHL[0] = MMU.rw(i);
     return 20;
   },
+
   LDmmHL() {
-    var i = MMU.rw(regPC[0]);
+    let i = MMU.rw(regPC[0]);
     regPC[0] += 2;
     MMU.ww(i, regHL[0]);
     return 20;
@@ -264,7 +269,7 @@ const _ops = {
   // Save SP to given address
   // 0x08
   LDmmSP() {
-    var addr = MMU.rw(regPC[0]);
+    let addr = MMU.rw(regPC[0]);
     regPC[0] += 2;
     MMU.ww(addr, regSP[0]);
     return 20;
@@ -319,7 +324,7 @@ const _ops = {
   },
 
   LDHLSPn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) {
       i = -((~i + 1) & 0xFF);
     }
@@ -342,7 +347,7 @@ const _ops = {
    * @return int Clock ticks
    */
   swapNibbles(register) {
-    var tr = register[0];
+    let tr = register[0];
     register[0] = ((tr & 0xF) << 4) | ((tr & 0xF0) >> 4);
     regF[0] = register[0] ? 0 : F_ZERO;
     return 4;
@@ -353,7 +358,7 @@ const _ops = {
    * @return int Clock ticks
    */
   swapNibblesMem() {
-    var i = MMU.rb(regHL[0]);
+    let i = MMU.rb(regHL[0]);
     i = ((i & 0xF) << 4) | ((i & 0xF0) >> 4);
     MMU.wb(HL[0], i);
     // Best guess
@@ -367,7 +372,7 @@ const _ops = {
    * @return int Clock ticks
    */
   addReg(register) {
-    var a = regA[0];
+    let a = regA[0];
     regA[0] += register[0];
     // TODO: make sure all these '< a' checks actually make sense..
     regF[0] = ((regA[0] < a) ? 0x10 : 0) | (regA[0] ? 0 : F_ZERO);
@@ -379,8 +384,8 @@ const _ops = {
   // Add value pointed to by HL to A
   // 0x86
   ADDHL() {
-    var a = regA[0];
-    var m = MMU.rb(regHL[0]);
+    let a = regA[0];
+    let m = MMU.rb(regHL[0]);
     regA[0] += m;
     regF[0] = (regA[0] < a) ? F_CARRY : 0;
     if (!regA[0]) regF[0] |= F_ZERO;
@@ -389,8 +394,8 @@ const _ops = {
   },
 
   ADDn() {
-    var a = regA[0];
-    var m = MMU.rb(regPC[0]);
+    let a = regA[0];
+    let m = MMU.rb(regPC[0]);
     regA[0] += m;
     regPC[0]++;
     regF[0] = (regA[0] < a) ? F_CARRY : 0;
@@ -406,8 +411,8 @@ const _ops = {
   * @return int Clock ticks
   */
   addHLReg(register) {
-    var sum = regHL[0] + register[0];
-    var flags = 0;
+    let sum = regHL[0] + register[0];
+    let flags = 0;
     if ((regHL[0] & 0xFFF) > (sum & 0xFFF)) {
       flags += F_HCARRY;
     }
@@ -422,7 +427,7 @@ const _ops = {
   // ADD SP, n
   // 0xE8
   ADDSPn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) {
       i = -((~i + 1) & 0xFF);
     }
@@ -438,7 +443,7 @@ const _ops = {
    * @return int Clock ticks
    */
   adcReg(register) {
-    var a = regA[0];
+    let a = regA[0];
     regA[0] += register[0];
     regA[0] += (regF[0] & F_CARRY) ? 1 : 0;
     regF[0] = ((regA[0] < a) ? F_CARRY : 0) | (regA[0] ? 0 : F_ZERO);
@@ -447,8 +452,8 @@ const _ops = {
   },
 
   ADCHL() {
-    var a = regA[0];
-    var m = MMU.rb(regHL[0]);
+    let a = regA[0];
+    let m = MMU.rb(regHL[0]);
     regA[0] += m + ((regF[0] & F_CARRY) ? 1 : 0);
     regF[0] = ((regA[0] < a) ? F_CARRY : 0) | (regA[0] ? 0 : F_ZERO);
     if ((regA[0] ^ m ^ a) & 0x10) regF[0] |= F_HCARRY;
@@ -459,8 +464,8 @@ const _ops = {
   // Add 8-bit immediate and carry to A
   // 0xCE
   ADCn() {
-    var a = regA[0];
-    var m = MMU.rb(regPC[0]);
+    let a = regA[0];
+    let m = MMU.rb(regPC[0]);
     a += m + ((regF[0] & F_CARRY) ? 1 : 0);
     regPC[0]++;
     regA[0] = a;
@@ -475,7 +480,7 @@ const _ops = {
    * @return int The clock ticks
    */
   subReg(register) {
-    var a = regA[0];
+    let a = regA[0];
     a -= register[0];
     regA[0] = a;
     // All flags are updated
@@ -487,8 +492,8 @@ const _ops = {
   },
 
   SUBHL() {
-    var a = regA[0];
-    var m = MMU.rb(regHL[0]);
+    let a = regA[0];
+    const m = MMU.rb(regHL[0]);
     a -= m;
     regA[0] = a
     regF[0] = F_OP | ((a < 0) ? F_CARRY : 0) | (regA[0] ? 0 : F_ZERO);
@@ -499,8 +504,8 @@ const _ops = {
   // Subtract 8-bit immediate from A
   // 0xD6
   SUBn() {
-    var a = regA[0];
-    var m = MMU.rb(regPC[0]);
+    let a = regA[0];
+    const m = MMU.rb(regPC[0]);
     a -= m;
     regPC[0]++;
     regA[0] = a;
@@ -515,16 +520,18 @@ const _ops = {
    * @return int Clock ticks
    */
   subcReg(register) {
-    var sum = regA[0] - register[0] - ((regF[0] & F_CARRY) ? 1 : 0);
+    const sum = regA[0] - register[0] - ((regF[0] & F_CARRY) ? 1 : 0);
     regA[0] = sum;
-    var flags = F_OP | (regA[0] ? 0 : F_ZERO) | ((sum < 0) ? F_CARRY : 0);
+
+    // TODO: test carry register
+    regF[0] = F_OP | (regA[0] ? 0 : F_ZERO) | ((sum < 0) ? F_CARRY : 0);
     if ((regA[0] ^ register[0] ^ sum) & 0x10) regF[0] |= F_HCARRY;
     return 4;
   },
 
   SBCHL() {
-    var a = regA[0];
-    var m = MMU.rb(regHL[0]);
+    let a = regA[0];
+    const m = MMU.rb(regHL[0]);
     a -= m - ((regF[0] & F_CARRY) ? 1 : 0);
     regA[0] = a;
     regF[0] = F_OP | ((a < 0) ? F_CARRY : 0) | (regA[0] ? 0 : F_ZERO);
@@ -533,8 +540,8 @@ const _ops = {
   },
 
   SBCn() {
-    var a = regA[0];
-    var m = MMU.rb(regPC[0]);
+    let a = regA[0];
+    const m = MMU.rb(regPC[0]);
     a -= m - ((regF[0] & F_CARRY) ? 1 : 0);
     regA[0] = a;
     regF[0] = F_OP | ((a < 0) ? F_CARRY : 0) | (regA[0] ? 0 : F_ZERO);
@@ -549,7 +556,7 @@ const _ops = {
    * @return int Clock ticks
    */
   cpReg(register) {
-    var i = regA[0];
+    let i = regA[0];
     i -= register[0];
     // TODO: does this need an op flag?
     regF[0] = F_OP | ((i < 0) ? F_CARRY : 0);
@@ -560,8 +567,8 @@ const _ops = {
   },
 
   CPHL() {
-    var i = regA[0];
-    var m = MMU.rb(regHL[0]);
+    let i = regA[0];
+    const m = MMU.rb(regHL[0]);
     i -= m;
     // TODO: check F_OP
     regF[0] = F_OP | ((i < 0) ? F_CARRY : 0);
@@ -572,8 +579,8 @@ const _ops = {
   },
 
   CPn() {
-    var i = regA[0];
-    var m = MMU.rb(regPC[0]);
+    let i = regA[0];
+    const m = MMU.rb(regPC[0]);
     i -= m;
     regPC[0]++;
     regF[0] = F_OP | ((i < 0) ? F_CARRY : 0);
@@ -584,12 +591,12 @@ const _ops = {
   },
 
   /**
-   * DAA - for dealing with 
+   * DAA - for dealing with BCD-encoding
    * 0x27
    */
   DAA() {
     // Lookup from our table
-    var daaLookupIdx = regA[0];
+    let daaLookupIdx = regA[0];
     daaLookupIdx |= (regF[0] & (F_CARRY | F_HCARRY | F_OP)) << 4;
 
     regAF[0] = daaTable[daaLookupIdx];
@@ -638,6 +645,7 @@ const _ops = {
     regF[0] = regA[0] ? 0 : F_ZERO;
     return 8;
   },
+
   ORn() {
     regA[0] |= MMU.rb(regPC[0]);
     regPC[0]++;
@@ -681,7 +689,7 @@ const _ops = {
   },
 
   INCHLm() {
-    var i = MMU.rb(regHL[0]) + 1;
+    let i = MMU.rb(regHL[0]) + 1;
     i &= 0xFF;
     MMU.wb(regHL[0], i);
     regF[0] = i ? 0 : F_ZERO;
@@ -705,7 +713,7 @@ const _ops = {
   },
 
   DECHLm() {
-    var i = MMU.rb(regHL[0]) - 1;
+    let i = MMU.rb(regHL[0]) - 1;
     i &= 0xFF;
     MMU.wb(regHL[0], i);
     regF[0] = i ? 0 : F_ZERO;
@@ -756,9 +764,7 @@ const _ops = {
    * @return int Clock ticks
    */
   setMem(bitmask) {
-    var i = MMU.rb(regHL[0]);
-    i |= bitmask;
-    MMU.wb(regHL[0], i);
+    MMU.wb(regHL[0], MMU.rb(regHL[0]) | bitmask);
     return 16;
   },
 
@@ -804,36 +810,36 @@ const _ops = {
    * @return int Clock ticks
    */
   resMem(bitmask) {
-    var i = MMU.rb(regHL[0]);
+    let i = MMU.rb(regHL[0]);
     i &= ~bitmask;
     MMU.wb(regHL[0], i);
     return 16;
   },
 
   RLA() {
-    var ci = regF[0] & F_CARRY ? 1 : 0;
-    var co = regA[0] & 0x80 ? F_CARRY : 0;
+    const ci = regF[0] & F_CARRY ? 1 : 0;
+    const co = regA[0] & 0x80 ? F_CARRY : 0;
     regA[0] = (regA[0] << 1) + ci;
     regF[0] = (regF[0] & ~F_CARRY) + co;
     return 4;
   },
   RLCA() {
-    var ci = regA[0] & 0x80 ? 1 : 0;
-    var co = regA[0] & 0x80 ? F_CARRY : 0;
+    const ci = regA[0] & 0x80 ? 1 : 0;
+    const co = regA[0] & 0x80 ? F_CARRY : 0;
     regA[0] = (regA[0] << 1) + ci;
     regF[0] = (regF[0] & ~F_CARRY) + co;
     return 4;
   },
   RRA() {
-    var ci = regF[0] & F_CARRY ? 0x80 : 0;
-    var co = regA[0] & 1 ? F_CARRY : 0;
+    const ci = regF[0] & F_CARRY ? 0x80 : 0;
+    const co = regA[0] & 1 ? F_CARRY : 0;
     regA[0] = (regA[0] >> 1) + ci;
     regF[0] = (regF[0] & ~F_CARRY) + co;
     return 4;
   },
   RRCA() {
-    var ci = regA[0] & 1 ? 0x80 : 0;
-    var co = regA[0] & 1 ? F_CARRY : 0;
+    const ci = regA[0] & 1 ? 0x80 : 0;
+    const co = regA[0] & 1 ? F_CARRY : 0;
     regA[0] = (regA[0] >> 1) + ci;
     regF[0] = (regF[0] & ~F_CARRY) + co;
     return 4;
@@ -845,8 +851,8 @@ const _ops = {
    * @return int Clock ticks
    */
   rlReg(register) {
-    var ci = regF[0] & F_CARRY ? 1 : 0;
-    var co = register[0] & 0x80 ? 0x10 : 0;
+    const ci = regF[0] & F_CARRY ? 1 : 0;
+    const co = register[0] & 0x80 ? 0x10 : 0;
     register[0] = (register[0] << 1) + ci;
     regF[0] = (register[0]) ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -854,9 +860,9 @@ const _ops = {
   },
 
   RLHL() {
-    var i = MMU.rb(regHL[0]);
-    var ci = regF[0] & F_CARRY ? 1 : 0;
-    var co = i & 0x80 ? 0x10 : 0;
+    let i = MMU.rb(regHL[0]);
+    const ci = regF[0] & F_CARRY ? 1 : 0;
+    const co = i & 0x80 ? 0x10 : 0;
     i = ((i << 1) + ci) & 0xFF;
     regF[0] = i ? 0 : F_ZERO;
     MMU.wb(regHL[0], i);
@@ -870,8 +876,8 @@ const _ops = {
    * @return int Clock ticks
    */
   rlcReg(register) {
-    var ci = register[0] & 0x80 ? 1 : 0;
-    var co = register[0] & 0x80 ? F_CARRY : 0;
+    const ci = register[0] & 0x80 ? 1 : 0;
+    const co = register[0] & 0x80 ? F_CARRY : 0;
     register[0] = (register[0] << 1) + ci;
     regF[0] = (register[0]) ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -883,9 +889,9 @@ const _ops = {
    * @return int Clock ticks
    */
   RLCHL() {
-    var i = MMU.rb(regHL[0]);
-    var ci = i & 0x80 ? 1 : 0;
-    var co = i & 0x80 ? F_CARRY : 0;
+    let i = MMU.rb(regHL[0]);
+    const ci = i & 0x80 ? 1 : 0;
+    const co = i & 0x80 ? F_CARRY : 0;
     i = (i << 1) + ci;
     i &= 0xFF;
     regF[0] = (i) ? 0 : F_ZERO;
@@ -900,8 +906,8 @@ const _ops = {
    * @return int Clock ticks
    */
   rrReg(register) {
-    var ci = regF[0] & 0x10 ? 0x80 : 0;
-    var co = register[0] & 1 ? 0x10 : 0;
+    const ci = regF[0] & 0x10 ? 0x80 : 0;
+    const co = register[0] & 1 ? 0x10 : 0;
     register[0] = (register[0] >> 1) + ci;
     regF[0] = (register[0]) ? 0 : 0x80;
     regF[0] = (regF[0] & 0xEF) + co;
@@ -909,9 +915,9 @@ const _ops = {
   },
 
   RRHL() {
-    var i = MMU.rb(regHL[0]);
-    var ci = regF[0] & F_CARRY ? 0x80 : 0;
-    var co = i & 1 ? F_CARRY : 0;
+    let i = MMU.rb(regHL[0]);
+    const ci = regF[0] & F_CARRY ? 0x80 : 0;
+    const co = i & 1 ? F_CARRY : 0;
     i = (i >> 1) + ci;
     i &= 0xFF;
     MMU.wb(regHL[0], i);
@@ -926,8 +932,8 @@ const _ops = {
    * @return int Clock ticks
    */
   rrcReg(register) {
-    var ci = register[0] & 1 ? 0x80 : 0;
-    var co = register[0] & 1 ? F_CARRY : 0;
+    const ci = register[0] & 1 ? 0x80 : 0;
+    const co = register[0] & 1 ? F_CARRY : 0;
     register[0] = (register[0] >> 1) + ci;
     regF[0] = (register[0]) ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -935,9 +941,9 @@ const _ops = {
   },
 
   RRCHL() {
-    var i = MMU.rb(regHL[0]);
-    var ci = i & 1 ? 0x80 : 0;
-    var co = i & 1 ? F_CARRY : 0;
+    let i = MMU.rb(regHL[0]);
+    const ci = i & 1 ? 0x80 : 0;
+    const co = i & 1 ? F_CARRY : 0;
     i = (i >> 1) + ci;
     i &= 0xFF;
     MMU.wb(regHL[0], i);
@@ -952,7 +958,7 @@ const _ops = {
    * @return int Clock ticks
    */
   slaReg(register) {
-    var co = register[0] & 0x80 ? F_CARRY : 0;
+    const co = register[0] & 0x80 ? F_CARRY : 0;
     register[0] <<= 1;
     regF[0] = register[0] ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -966,9 +972,9 @@ const _ops = {
    */
   slaMem() {
     // Get val in memory
-    var i = MMU.rb(regHL[0]);
+    let i = MMU.rb(regHL[0]);
     // If top bit set, then we're carrying
-    var carry = i & 0x80 ? F_CARRY : 0;
+    const carry = i & 0x80 ? F_CARRY : 0;
     i <<= 1;
     regF[0] = i ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + carry;
@@ -982,8 +988,8 @@ const _ops = {
    * @return int Clock ticks
    */
   sraReg(register) {
-    var ci = register[0] & 0x80;
-    var co = register[0] & 1 ? F_CARRY : 0;
+    const ci = register[0] & 0x80;
+    const co = register[0] & 1 ? F_CARRY : 0;
     register[0] = (register[0] >> 1) + ci;
     regF[0] = (register[0]) ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -997,9 +1003,9 @@ const _ops = {
    */
   sraMem() {
     // Get val in memory
-    var i = MMU.rb(regHL[0]);
+    let i = MMU.rb(regHL[0]);
     // If bottom bit set, then we're carrying
-    var carry = i & 0x01 ? F_CARRY : 0;
+    const carry = i & 0x01 ? F_CARRY : 0;
     // Shift right
     i >>= 1;
     regF[0] = (i ? 0 : F_ZERO) | carry;
@@ -1013,7 +1019,7 @@ const _ops = {
    * @return int Clock ticks
    */
   srlReg(register) {
-    var co = register[0] & 1 ? F_CARRY : 0;
+    const co = register[0] & 1 ? F_CARRY : 0;
     register[0] = register[0] >> 1;
     regF[0] = (register[0]) ? 0 : F_ZERO;
     regF[0] = (regF[0] & ~F_CARRY) + co;
@@ -1025,8 +1031,8 @@ const _ops = {
    * @return int Clock ticks
    */
   srlMem() {
-    var i = MMU.rb(regHL[0]);
-    var carry = (i & 0x01) ? F_CARRY : 0;
+    let i = MMU.rb(regHL[0]);
+    const carry = (i & 0x01) ? F_CARRY : 0;
     i >>= 1;
     regF[0] = ((register[0]) ? 0 : F_ZERO) | carry;
     return 16
@@ -1037,18 +1043,23 @@ const _ops = {
     regF[0] = regA[0] ? 0 : F_ZERO;
     return 4;
   },
+
   NEG() {
     regA[0] = 0 - regA[0];
-    regF[0] = (regA[0] < 0) ? F_CARRY : 0;
+
+    // TODO: test negative check worked
+    // Check if our sign bit was set
+    regF[0] = (regA[0] & 0x80) ? F_CARRY : 0;
     if (!regA[0]) regF[0] |= F_ZERO;
     return 8;
   },
 
   CCF() {
-    var ci = regF[0] & 0x10 ? 0 : F_CARRY;
+    let ci = regF[0] & 0x10 ? 0 : F_CARRY;
     regF[0] = (regF[0] & ~F_CARRY) + ci;
     return 4;
   },
+
   SCF() {
     regF[0] |= F_CARRY;
     return 4;
@@ -1124,10 +1135,12 @@ const _ops = {
     regPC[0] = MMU.rw(regPC[0]);
     return 12;
   },
+
   JPHL() {
     regPC[0] = regHL[0];
     return 4;
   },
+
   JPNZnn() {
     if ((regF[0] & F_ZERO) === 0x00) {
       regPC[0] = MMU.rw(regPC[0]);
@@ -1137,6 +1150,7 @@ const _ops = {
       return 12;
     }
   },
+
   JPZnn() {
     if ((regF[0] & F_ZERO) === F_ZERO) {
       regPC[0] = MMU.rw(regPC[0]);
@@ -1146,6 +1160,7 @@ const _ops = {
       return 12;
     }
   },
+
   JPNCnn() {
     if ((regF[0] & F_CARRY) === 0) {
       regPC[0] = MMU.rw(regPC[0]);
@@ -1155,6 +1170,7 @@ const _ops = {
       return 12;
     }
   },
+
   JPCnn() {
     if ((regF[0] & F_CARRY) !== 0) {
       regPC[0] = MMU.rw(regPC[0]);
@@ -1166,15 +1182,16 @@ const _ops = {
   },
 
   JRn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) {
       i = -((~i + 1) & 0xFF);
     }
     regPC[0] += i + 1;
     return 12;
   },
+
   JRNZn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) i = -((~i + 1) & 0xFF);
     regPC[0]++;
     if ((regF[0] & F_ZERO) === 0x00) {
@@ -1184,8 +1201,9 @@ const _ops = {
       return 8;
     }
   },
+
   JRZn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) i = -((~i + 1) & 0xFF);
     regPC[0]++;
     if (regF[0] & F_ZERO) {
@@ -1195,8 +1213,9 @@ const _ops = {
       return 8;
     }
   },
+
   JRNCn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) i = -((~i + 1) & 0xFF);
     regPC[0]++;
     if ((regF[0] & F_CARRY) === 0) {
@@ -1206,8 +1225,9 @@ const _ops = {
       return 8;
     }
   },
+
   JRCn() {
-    var i = MMU.rb(regPC[0]);
+    let i = MMU.rb(regPC[0]);
     if (i > 0x7F) i = -((~i + 1) & 0xFF);
     regPC[0]++;
     if (regF[0] & F_CARRY) {
@@ -1371,7 +1391,7 @@ const _ops = {
   },
 
   MAPcb() {
-    var i = MMU.rb(regPC[0]);
+    const i = MMU.rb(regPC[0]);
     regPC[0]++;
     if (_cbmap[i]) {
       return _cbmap[i]();
@@ -1382,8 +1402,8 @@ const _ops = {
 
   XX(instruction) {
     /*Undefined map entry*/
-    var opc = regPC[0] - 1;
-    console.log('Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
+    const opc = regPC[0] - 1;
+    setTimeout(log, 1, 'z80', 'Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
     Z80._stop = 1;
   }
 };

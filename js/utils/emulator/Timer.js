@@ -5,6 +5,9 @@
 import MMU from './mmu.js';
 import Z80 from './z80.js';
 
+// Flux
+import {log} from '../../actions/LogActions.js';
+
 // Basic timer registers
 var _div = 0;
 var _tma = 0;
@@ -19,7 +22,7 @@ const _clock = {
 };
 
 const Timer = {
-  reset: function(cb) {
+  reset: function() {
     _div = 0;
     _tma = 0;
     _tima = 0;
@@ -27,7 +30,7 @@ const Timer = {
     _clock.main = 0;
     _clock.sub = 0;
     _clock.div = 0;
-    cb(null, 'Reset');
+    setTimeout(log, 1, 'timer', 'Reset');
   },
 
   step: function() {

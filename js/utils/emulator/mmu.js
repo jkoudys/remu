@@ -1,3 +1,7 @@
+// Flux
+import {log} from '../../actions/LogActions.js';
+
+// Game Boy
 import GPU from './gpu.js';
 import Z80 from './z80.js';
 import Keypad from './Keypad.js';
@@ -48,7 +52,7 @@ const MMU = {
     return MMU._rom;
   },
 
-  reset(cb) {
+  reset() {
     MMU._wram = new Uint8Array(0x2000);
     MMU._eram = new Uint8Array(0x8000);
     MMU._zram = new Uint8Array(0x7f);
@@ -68,21 +72,21 @@ const MMU = {
     MMU._romoffs = 0x4000;
     MMU._ramoffs = 0;
 
-    cb(null, {msg: 'Reset'});
+    setTimeout(log, 1, 'mmu', 'Reset');
   },
 
   /**
    * Load a buffer as the ROM
    * @param ArrayBuffer buffer The ROM itself
    */
-  load(buffer, cb) {
+  load(buffer) {
     MMU._rom = new Uint8Array(buffer);
     MMU._carttype = MMU._rom[0x0147];
 
-    cb(null, {msg: 'ROM loaded, ' + MMU._rom.length + ' bytes'});
+    setTimeout(log, 1, 'mmu', 'ROM loaded, ' + MMU._rom.length + ' bytes');
   },
 
-  rb(addr, cb) {
+  rb(addr) {
     // TODO: this could be _way_ simpler if simply using a DataView
     switch (addr & 0xF000) {
       // ROM bank 0
@@ -91,7 +95,7 @@ const MMU = {
           if (addr < 0x0100) return MMU._bios[addr];
           else if (Z80.getPC() == 0x0100) {
             MMU._inbios = 0;
-            cb(null, {msg: 'Leaving BIOS'});
+            setTimeout(log, 1, 'mmu', 'Leaving BIOS');
           }
         } else {
           return MMU._rom[addr];

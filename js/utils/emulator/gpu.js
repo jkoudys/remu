@@ -1,4 +1,7 @@
-// GameBoy components
+// Flux
+import {log} from '../../actions/LogActions.js';
+
+// Game Boy components
 import MMU from './mmu.js';
 import Z80 from './z80.js';
 
@@ -11,26 +14,33 @@ const ADDR_BGMAP1 = 0x1C00;
 
 // TODO: encapsulate vram + oam
 // Memory
-var _vram;
-var _tileMap0;
-var _tileMap1;
+let _vram;
+let _tileMap0;
+let _tileMap1;
 
 // Drawing area
-var _imageData;
+let _imageData;
 /**
  * @param _screen Uint32Array Allows us to address each pixel at each index
  */
-var _screen;
-var _context;
+let _screen;
+let _context;
 const _palette = {};
 const _tileSet = [];
+let _modeclocks = 0;
+let _curline = 0;
+let _linemode = 0;
+let _lcdon;
+let _raster;
+let _bgon;
+let _objsize;
 
 // The background is one big map, so it makes sense to manage in its own canvas
-var _bgLayer;
-var _bgCtx;
+let _bgLayer;
+let _bgCtx;
 
-var _yscrl = 0;
-var _xscrl = 0;
+const _scrl = [0, 0];
+const _objdata = [];
 
 // Build a palette that we can assign using the js engine's native endianness
 function endFix(array) {
@@ -49,25 +59,12 @@ const _greys = [0xFF, 0xC0, 0x60, 0];
 const GPU = {
   _oam: null,
   _reg: [],
-  _objdata: [],
-  _objdatasorted: [],
-  _scanrow: [],
 
-  _curline: 0,
-  _linemode: 0,
-  _modeclocks: 0,
-
-  _raster: 0,
-  _ints: 0,
-
-  _lcdon: 0,
-  _bgon: 0,
   _objon: 0,
   _winon: 0,
 
-  _objsize: 0,
 
-  reset(cb) {
+  reset() {
     // Zero out memory
     _vram = new Uint8Array(0x2000);
     _tileMap0 = _vram.subarray(0x1800, 0x1C00);
@@ -76,8 +73,8 @@ const GPU = {
 
     // Setup an offscreen background, since this has a bunch of tiles
     _bgLayer = document.createElement('canvas');
-    _bgLayer.width = 256;
-    _bgLayer.height = 256;
+    _bgLayer.width = 0x100;
+    _bgLayer.height = 0x100;
     _bgCtx = _bgLayer.getContext('2d');
 
     // Build a bunch of new 8x8 tiles in our tilemap
@@ -88,25 +85,26 @@ const GPU = {
     // Blank the screen
     GPU.blankScreen();
 
+    // Scroll registers
+    _scrl[0] = 0;
+    _scrl[1] = 0;
+
+    _curline = 0;
+    _linemode = 2;
+    _lcdon = 0;
+    _raster = 0;
+    _bgon = 0;
+    _objsize = 0;
+
     // Init flags
-    GPU._curline = 0;
-    GPU._linemode = 2;
-    GPU._modeclocks = 0;
-    _yscrl = 0;
-    _xscrl = 0;
-    GPU._raster = 0;
-    GPU._ints = 0;
-
-    GPU._lcdon = 0;
-    GPU._bgon = 0;
-    GPU._objon = 0;
-    GPU._winon = 0;
-
-    GPU._objsize = 0;
-    for (let i = 0; i < WIDTH; i++) GPU._scanrow[i] = 0;
+    Object.assign(GPU, {
+      _modeclocks: 0,
+      _objon: 0,
+      _winon: 0,
+    });
 
     for (let i = 0; i < 40; i++) {
-      GPU._objdata[i] = {
+      _objdata[i] = {
         'y': -16,
         'x': -8,
         'tile': 0,
@@ -118,9 +116,8 @@ const GPU = {
       };
     }
 
-    if (cb instanceof Function) {
-      cb(null, 'Reset');
-    }
+    // Defer logging until after action
+    setTimeout(log, 1, 'gpu', 'Reset');
   },
 
   /**
@@ -130,12 +127,11 @@ const GPU = {
     _vram[addr] = val;
 
     // For performance, update our rendered tiles with the vram gets updated
-    if (addr >= ADDR_BGMAP0) {
+    if (addr >= ADDR_BGMAP0 && addr < (ADDR_BGMAP0 + _tileMap0.length)) {
       GPU.updateBackground(addr);
-    } else {
+    }
       GPU.updateTile(addr, val);
 //      GPU.renderBackground();
-    }
   },
 
   getVram(addr) {
@@ -163,6 +159,7 @@ const GPU = {
         _screen[i] = _colors[3];
       }
 
+      // XXX putImageData is apparently way slower than drawImage
       _context.putImageData(_imageData, 0, 0);
     }
   },
@@ -174,7 +171,7 @@ const GPU = {
          tid++) {
       _bgCtx.putImageData(_tileSet[_tileMap0[tid]], x,  y);
       x += 8;
-      if (x > 255) {
+      if (x > 0xFF) {
         x = 0;
         y += 8;
       }
@@ -183,8 +180,11 @@ const GPU = {
 
   // Update a single tile
   updateBackground(addr) {
-    var tid = addr - ADDR_BGMAP0;
-    _bgCtx.putImageData(_tileSet[_tileMap0[tid]], (tid % 32) << 3, (tid >> 5) << 3);
+    const tid = addr - ADDR_BGMAP0;
+    if (_bgCtx) {
+      // TODO: support xflip + yflip
+      _bgCtx.putImageData(_tileSet[_tileMap0[tid]], (tid % 32) << 3, (tid >> 5) << 3);
+    }
   },
 
   checkline(ticks) {
@@ -193,20 +193,20 @@ const GPU = {
     // work without them. Ideally this could be turned on/off on a per/rom basis.
     // Non-scanline rendering is faster and smoother.
     GPU._modeclocks += ticks;
-    switch (GPU._linemode) {
+    switch (_linemode) {
       // In hblank
       case 0:
         if (GPU._modeclocks >= 51) {
           // End of hblank for last scanline; render screen
-          if (GPU._curline == 143) {
-            GPU._linemode = 1;
+          if (_curline == 143) {
+            _linemode = 1;
             _context.putImageData(_imageData, 0, 0);
-            _context.drawImage(_bgLayer, _xscrl, _yscrl);
+            _context.drawImage(_bgLayer, _scrl[0], _scrl[1]);
             MMU._if |= 1;
           } else {
-            GPU._linemode = 2;
+            _linemode = 2;
           }
-          GPU._curline++;
+          _curline++;
           GPU._modeclocks = 0;
         }
         break;
@@ -215,10 +215,10 @@ const GPU = {
       case 1:
         if (GPU._modeclocks >= 114) {
           GPU._modeclocks = 0;
-          GPU._curline++;
-          if (GPU._curline > 153) {
-            GPU._curline = 0;
-            GPU._linemode = 2;
+          _curline++;
+          if (_curline > 0x99) {
+            _curline = 0;
+            _linemode = 2;
           }
         }
         break;
@@ -227,7 +227,7 @@ const GPU = {
       case 2:
         if (GPU._modeclocks >= 20) {
           GPU._modeclocks = 0;
-          GPU._linemode = 3;
+          _linemode = 3;
         }
         break;
 
@@ -236,9 +236,9 @@ const GPU = {
         // Render scanline at end of allotted time
         if (GPU._modeclocks >= 43) {
           GPU._modeclocks = 0;
-          GPU._linemode = 0;
+          _linemode = 0;
           /*
-          if (GPU._lcdon) {
+          if (._lcdon) {
             if (GPU._bgon) {
               let linebase = GPU._curscan;
               let mapbase = GPU._bgmapbase + ((((GPU._curline + GPU._yscrl) & 0xFF) >> 3) << 5);
@@ -343,18 +343,17 @@ const GPU = {
      * Actually represents 8 pixels: [10, 00, 11, 00, 01, 11, 00, 00]
      * Since it's 2-bits, the palette is 4 colours.
      */
-    var saddr = addr & 0xFFFE;
+    const saddr = addr & 0xFFFE;
 
     // Each tile is 16 bytes (2 bytes => 8 pixels)
-    var tile = (saddr >> 4) & 0x01FF;
+    const tile = (saddr >> 4) & 0x01FF;
 
     // Lookup which row of the tile this address refers to
-    var y = (saddr >> 1) & 7;
-    var sx;
+    const y = (saddr >> 1) & 7;
 
     // Grab the subarray for the line we're updating
     // ImageData is 4 bytes per pixel, so each line is 4 bytes * 8 pixels / line * line
-    var line = _tileSet[tile].data.subarray(y << 5, 1 + y << 5);
+    const line = _tileSet[tile].data.subarray(y << 5, 1 + y << 5);
 
     // X is cartesian, sx is the bit offset to mask
     for (let x = 0, sx = 0x80; x < 32; x += 4, sx = sx >> 1) {
@@ -368,60 +367,55 @@ const GPU = {
   },
 
   updateoam(addr, val) {
+    const obj = addr >> 2;
     addr -= 0xFE00;
-    var obj = addr >> 2;
     if (obj < 40) {
       switch (addr & 3) {
         case 0:
-          GPU._objdata[obj].y = val - 16;
+          _objdata[obj].y = val - 16;
           break;
         case 1:
-          GPU._objdata[obj].x = val - 8;
+          _objdata[obj].x = val - 8;
           break;
         case 2:
-          if (GPU._objsize) GPU._objdata[obj].tile = (val & 0xFE);
-          else GPU._objdata[obj].tile = val;
+          if (_objsize) _objdata[obj].tile = (val & 0xFE);
+          else _objdata[obj].tile = val;
           break;
         case 3:
-          GPU._objdata[obj].palette = (val & 0x10) ? 1 : 0;
-          GPU._objdata[obj].xflip = (val & 0x20) ? 1 : 0;
-          GPU._objdata[obj].yflip = (val & 0x40) ? 1 : 0;
-          GPU._objdata[obj].prio = (val & 0x80) ? 1 : 0;
+          _objdata[obj].palette = (val & 0x10) ? 1 : 0;
+          _objdata[obj].xflip = (val & 0x20) ? 1 : 0;
+          _objdata[obj].yflip = (val & 0x40) ? 1 : 0;
+          _objdata[obj].prio = (val & 0x80) ? 1 : 0;
           break;
       }
     }
-    GPU._objdatasorted = GPU._objdata;
-    GPU._objdatasorted.sort(function(a, b) {
-      if (a.x > b.x) return -1;
-      if (a.num > b.num) return -1;
-    });
   },
 
   rb(addr) {
-    var gaddr = addr - 0xFF40;
+    const gaddr = addr - 0xFF40;
     switch (gaddr) {
       case 0:
-        return (GPU._lcdon ? 0x80 : 0) |
+        return (_lcdon ? 0x80 : 0) |
           ((GPU._bgtilebase == 0x0000) ? 0x10 : 0) |
           ((GPU._bgmapbase == 0x1C00) ? 0x08 : 0) |
-          (GPU._objsize ? 0x04 : 0) |
+          (_objsize ? 0x04 : 0) |
           (GPU._objon ? 0x02 : 0) |
-          (GPU._bgon ? 0x01 : 0);
+          (_bgon ? 0x01 : 0);
 
       case 1:
-        return (GPU._curline == GPU._raster ? 4 : 0) | GPU._linemode;
+        return (GPU._curline == _raster ? 4 : 0) | _linemode;
 
       case 2:
-        return _yscrl;
+        return _scrl[1];
 
       case 3:
-        return _xscrl;
+        return _scrl[0];
 
       case 4:
         return GPU._curline;
 
       case 5:
-        return GPU._raster;
+        return _raster;
 
       default:
         return GPU._reg[gaddr];
@@ -429,28 +423,28 @@ const GPU = {
   },
 
   wb(addr, val) {
-    var gaddr = addr - 0xFF40;
+    const gaddr = addr - 0xFF40;
     GPU._reg[gaddr] = val;
     switch (gaddr) {
       case 0:
-        GPU._lcdon = (val & 0x80) ? 1 : 0;
+        _lcdon = (val & 0x80) ? 1 : 0;
         GPU._bgtilebase = (val & 0x10) ? 0x0000 : 0x0800;
         GPU._bgmapbase = (val & 0x08) ? 0x1C00 : 0x1800;
-        GPU._objsize = (val & 0x04) ? 1 : 0;
+        _objsize = (val & 0x04) ? 1 : 0;
         GPU._objon = (val & 0x02) ? 1 : 0;
-        GPU._bgon = (val & 0x01) ? 1 : 0;
+        _bgon = (val & 0x01) ? 1 : 0;
         break;
 
       case 2:
-        _yscrl = val;
+        _scrl[1] = val;
         break;
 
       case 3:
-        _xscrl = val;
+        _scrl[0] = val;
         break;
 
       case 5:
-        GPU._raster = val;
+        _raster = val;
         break;
 
       // OAM DMA

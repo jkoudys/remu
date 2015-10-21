@@ -63,7 +63,41 @@ function receiveCanvas(canvas) {
   });
 }
 
-},{"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8}],2:[function(require,module,exports){
+},{"../constants/EmuConstants.js":8,"../dispatcher/AppDispatcher.js":9}],2:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.log = log;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _constantsEmuConstantsJs = require('../constants/EmuConstants.js');
+
+var _dispatcherAppDispatcherJs = require('../dispatcher/AppDispatcher.js');
+
+var _dispatcherAppDispatcherJs2 = _interopRequireDefault(_dispatcherAppDispatcherJs);
+
+var _storesEmuStoreJs = require('../stores/EmuStore.js');
+
+var _storesEmuStoreJs2 = _interopRequireDefault(_storesEmuStoreJs);
+
+/**
+ * Add a log entry
+ * @param string module
+ * @param string msg
+ */
+
+function log(component, msg) {
+  _dispatcherAppDispatcherJs2['default'].dispatch({
+    type: _constantsEmuConstantsJs.ActionTypes.LOG_APPEND,
+    component: component,
+    msg: msg
+  });
+}
+
+},{"../constants/EmuConstants.js":8,"../dispatcher/AppDispatcher.js":9,"../stores/EmuStore.js":11}],3:[function(require,module,exports){
 /**
  * GameBoy Emulator, main app
  */
@@ -87,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.onkeyup = _utilsEmulatorKeypadJs2['default'].keyup;
 });
 
-},{"./components/GameBoy.jsx":3,"./utils/emulator/Keypad.js":13}],3:[function(require,module,exports){
+},{"./components/GameBoy.jsx":4,"./utils/emulator/Keypad.js":15}],4:[function(require,module,exports){
 /**
  * The main gameboy display
  */
@@ -181,7 +215,7 @@ var GameBoy = (function (_React$Component) {
 exports['default'] = GameBoy;
 module.exports = exports['default'];
 
-},{"../stores/EmuStore.js":10,"./MenuPanel.jsx":4,"./RomLoader.jsx":5,"./Screen.jsx":6}],4:[function(require,module,exports){
+},{"../stores/EmuStore.js":11,"./MenuPanel.jsx":5,"./RomLoader.jsx":6,"./Screen.jsx":7}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -201,6 +235,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
 var _storesEmuStoreJs = require('../stores/EmuStore.js');
 
 var _storesEmuStoreJs2 = _interopRequireDefault(_storesEmuStoreJs);
+
+var _storesLogStoreJs = require('../stores/LogStore.js');
+
+var _storesLogStoreJs2 = _interopRequireDefault(_storesLogStoreJs);
 
 // Time formatter
 var _fmt = Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
@@ -355,12 +393,15 @@ var EmulatorLog = (function (_React$Component3) {
   function EmulatorLog() {
     _classCallCheck(this, EmulatorLog);
 
-    _get(Object.getPrototypeOf(EmulatorLog.prototype), 'constructor', this).apply(this, arguments);
+    _get(Object.getPrototypeOf(EmulatorLog.prototype), 'constructor', this).call(this);
+    this.state = { startTime: Date.now() };
   }
 
   _createClass(EmulatorLog, [{
     key: 'render',
     value: function render() {
+      var _this = this;
+
       return React.createElement(
         'section',
         { id: 'emulatorlog' },
@@ -380,7 +421,7 @@ var EmulatorLog = (function (_React$Component3) {
               React.createElement(
                 'td',
                 null,
-                Math.floor(entry.time / 1000) + 's'
+                Math.floor((entry.time - _this.state.startTime) / 1000) + 's'
               ),
               React.createElement(
                 'td',
@@ -409,7 +450,11 @@ var MenuPanel = (function (_React$Component4) {
     _classCallCheck(this, MenuPanel);
 
     _get(Object.getPrototypeOf(MenuPanel.prototype), 'constructor', this).call(this);
-    this.state = { open: document.body.offsetWidth > 1400, submenu: null };
+    this.state = {
+      open: document.body.offsetWidth > 1400,
+      submenu: null,
+      log: []
+    };
     this.handleClose = this.handleClose.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
   }
@@ -427,17 +472,28 @@ var MenuPanel = (function (_React$Component4) {
   }, {
     key: 'componentWillMount',
     value: function componentWillMount() {
-      _storesEmuStoreJs2['default'].addChangeListener(this._onChange.bind(this));
+      _storesEmuStoreJs2['default'].addChangeListener(this._onEmuChange.bind(this));
+      _storesLogStoreJs2['default'].addChangeListener(this._onLogChange.bind(this));
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
-      _storesEmuStoreJs2['default'].removeChangeListener(this._onChange);
+      _storesEmuStoreJs2['default'].removeChangeListener(this._onEmuChange);
+      _storesLogStoreJs2['default'].removeChangeListener(this._onLogChange);
     }
   }, {
-    key: '_onChange',
-    value: function _onChange() {
-      this.setState({});
+    key: '_onEmuChange',
+    value: function _onEmuChange() {
+      this.setState({
+        romProps: _storesEmuStoreJs2['default'].getRomInfo()
+      });
+    }
+  }, {
+    key: '_onLogChange',
+    value: function _onLogChange() {
+      this.setState({
+        log: _storesLogStoreJs2['default'].getLog()
+      });
     }
   }, {
     key: 'render',
@@ -445,7 +501,6 @@ var MenuPanel = (function (_React$Component4) {
       var menuToggle;
       var back;
       var romInfo;
-      var romProps = _storesEmuStoreJs2['default'].getRomInfo();
 
       if (!this.state.open) {
         menuToggle = React.createElement(
@@ -464,8 +519,8 @@ var MenuPanel = (function (_React$Component4) {
         );
       }
 
-      if (romProps) {
-        romInfo = React.createElement(RomInfo, romProps);
+      if (this.state.romProps) {
+        romInfo = React.createElement(RomInfo, this.state.romProps);
       }
 
       return React.createElement(
@@ -516,7 +571,7 @@ var MenuPanel = (function (_React$Component4) {
           ),
           romInfo,
           React.createElement(SaveStates, null),
-          React.createElement(EmulatorLog, { log: _storesEmuStoreJs2['default'].getLog() })
+          React.createElement(EmulatorLog, { log: this.state.log })
         )
       );
     }
@@ -528,7 +583,7 @@ var MenuPanel = (function (_React$Component4) {
 exports['default'] = MenuPanel;
 module.exports = exports['default'];
 
-},{"../stores/EmuStore.js":10}],5:[function(require,module,exports){
+},{"../stores/EmuStore.js":11,"../stores/LogStore.js":12}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -628,7 +683,7 @@ var RomLoader = (function (_React$Component) {
 exports['default'] = RomLoader;
 module.exports = exports['default'];
 
-},{"../actions/EmuActions.js":1,"./Screen.jsx":6}],6:[function(require,module,exports){
+},{"../actions/EmuActions.js":1,"./Screen.jsx":7}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -679,7 +734,7 @@ var Screen = (function (_React$Component) {
 exports["default"] = Screen;
 module.exports = exports["default"];
 
-},{"../actions/EmuActions.js":1}],7:[function(require,module,exports){
+},{"../actions/EmuActions.js":1}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -694,14 +749,14 @@ var ActionTypes = (function () {
 })();
 exports.ActionTypes = ActionTypes;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 var Dispatcher = require('flux').Dispatcher;
 
 module.exports = new Dispatcher();
 
-},{"flux":19}],9:[function(require,module,exports){
+},{"flux":21}],10:[function(require,module,exports){
 // Object.assign
 'use strict';
 
@@ -746,7 +801,7 @@ if (!Object.assign) {
   }return !1;
 });
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 // Flux
 'use strict';
 
@@ -807,7 +862,6 @@ var CHANGE_EVENT = 'change';
 var _romFileName = '';
 var _frameCounter = { start: 0, frames: 0 };
 var _startTime = Date.now();
-var _log = [];
 
 /**
  * @param int _fps Target fps - no need for this to be higher than what you can see
@@ -825,29 +879,6 @@ var _runInterval;
 var _frameInterval;
 
 /**
- * The callback for logging. Typically set with bind() before passing
- * @param string component The "component" (in the hardware sense) being logged
- * @param object err Callback error
- * @param object data Data returned to log
- */
-function logExec(component, err, data) {
-  var entry = {
-    time: Date.now() - _startTime,
-    component: component
-  };
-
-  if (err) {
-    entry.msg = err.msg;
-    entry.level = 'error';
-  } else {
-    entry.msg = data;
-    entry.level = 'info';
-  }
-
-  _log.push(entry);
-}
-
-/**
  * Pause all execution. Pause issued from emulator controls, not in-game
  */
 function pauseEmulation() {
@@ -860,11 +891,11 @@ function pauseEmulation() {
  * Reset the emulator. A hard reset, equivalent to hitting power off/on
  */
 function resetEmulation() {
-  _utilsEmulatorGpuJs2['default'].reset(logExec.bind(null, 'gpu'));
-  _utilsEmulatorMmuJs2['default'].reset(logExec.bind(null, 'mmu'));
-  _utilsEmulatorZ80Js2['default'].reset(logExec.bind(null, 'z80'));
-  _utilsEmulatorKeypadJs2['default'].reset(logExec.bind(null, 'keypad'));
-  _utilsEmulatorTimerJs2['default'].reset(logExec.bind(null, 'timer'));
+  _utilsEmulatorGpuJs2['default'].reset();
+  _utilsEmulatorMmuJs2['default'].reset();
+  _utilsEmulatorZ80Js2['default'].reset();
+  _utilsEmulatorKeypadJs2['default'].reset();
+  _utilsEmulatorTimerJs2['default'].reset();
 
   pauseEmulation();
 }
@@ -897,7 +928,7 @@ function runEmulation() {
  * @param ArrayBuffer buffer
  */
 function receiveRom(buffer) {
-  _utilsEmulatorMmuJs2['default'].load(buffer, logExec.bind(null, 'mmu'));
+  _utilsEmulatorMmuJs2['default'].load(buffer);
 }
 
 /**
@@ -1061,7 +1092,85 @@ EmuStore.dispatchToken = _dispatcherAppDispatcherJs2['default'].register(functio
 exports['default'] = EmuStore;
 module.exports = exports['default'];
 
-},{"../actions/EmuActions.js":1,"../constants/EmuConstants.js":7,"../dispatcher/AppDispatcher.js":8,"../utils/EmuHelper.js":11,"../utils/emulator/Keypad.js":13,"../utils/emulator/Timer.js":14,"../utils/emulator/gpu.js":15,"../utils/emulator/mmu.js":16,"../utils/emulator/z80.js":17,"events":18}],11:[function(require,module,exports){
+},{"../actions/EmuActions.js":1,"../constants/EmuConstants.js":8,"../dispatcher/AppDispatcher.js":9,"../utils/EmuHelper.js":13,"../utils/emulator/Keypad.js":15,"../utils/emulator/Timer.js":16,"../utils/emulator/gpu.js":17,"../utils/emulator/mmu.js":18,"../utils/emulator/z80.js":19,"events":20}],12:[function(require,module,exports){
+// Flux
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _events = require('events');
+
+var _dispatcherAppDispatcherJs = require('../dispatcher/AppDispatcher.js');
+
+var _dispatcherAppDispatcherJs2 = _interopRequireDefault(_dispatcherAppDispatcherJs);
+
+var _constantsEmuConstantsJs = require('../constants/EmuConstants.js');
+
+var _EmuStoreJs = require('./EmuStore.js');
+
+var _EmuStoreJs2 = _interopRequireDefault(_EmuStoreJs);
+
+// Basic event name for basic emulator state change
+var CHANGE_EVENT = 'change';
+
+/**
+ * Local variables to the store
+ */
+var _log = [];
+
+/**
+ * Add to the runtime log
+ * @param string msg The message to save
+ * @param string component Optional module name that set the message
+ */
+function appendToLog(msg, component) {
+  var entry = { time: Date.now(), component: component, msg: msg };
+  _log.push(entry);
+  console.log(entry);
+}
+
+var LogStore = Object.assign({}, _events.EventEmitter.prototype, {
+  /**
+   * @param {function} callback
+   */
+  addChangeListener: function addChangeListener(callback) {
+    this.on(CHANGE_EVENT, callback);
+  },
+
+  removeChangeListener: function removeChangeListener(callback) {
+    this.removeListener(CHANGE_EVENT, callback);
+  },
+
+  emitChange: function emitChange() {
+    this.emit(CHANGE_EVENT);
+  },
+
+  /**
+   * Gets the runtime log
+   * @return array<object>
+   */
+  getLog: function getLog() {
+    return _log;
+  }
+});
+
+LogStore.dispatchToken = _dispatcherAppDispatcherJs2['default'].register(function (payload) {
+  switch (payload.type) {
+    case _constantsEmuConstantsJs.ActionTypes.LOG_APPEND:
+      appendToLog(payload.msg, payload.component);
+      LogStore.emitChange();
+      break;
+  }
+});
+
+exports['default'] = LogStore;
+module.exports = exports['default'];
+
+},{"../constants/EmuConstants.js":8,"../dispatcher/AppDispatcher.js":9,"./EmuStore.js":11,"events":20}],13:[function(require,module,exports){
 /**
  * Look for a null-terminated string over a memory extent
  * @param arraylike array The array/TypedArray to iterate through
@@ -1218,7 +1327,7 @@ function type(rom) {
   }
 }
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * Debug functions
  */
@@ -1279,20 +1388,24 @@ var instructionTable = [
 exports['default'] = Debug;
 module.exports = exports['default'];
 
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+// Flux
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
+
+var _actionsLogActionsJs = require('../../actions/LogActions.js');
+
 var Keypad = {
   _keys: [0x0F, 0x0F],
   _colidx: 0,
 
-  reset: function reset(cb) {
+  reset: function reset() {
     Keypad._keys = [0x0F, 0x0F];
     Keypad._colidx = 0;
-    cb(null, { msg: 'Reset' });
+    setTimeout(_actionsLogActionsJs.log, 1, 'keypad', 'Reset');
   },
 
   rb: function rb() {
@@ -1378,7 +1491,7 @@ var Keypad = {
 exports['default'] = Keypad;
 module.exports = exports['default'];
 
-},{}],14:[function(require,module,exports){
+},{"../../actions/LogActions.js":2}],16:[function(require,module,exports){
 /**
  * The system timer
  */
@@ -1399,6 +1512,10 @@ var _z80Js = require('./z80.js');
 
 var _z80Js2 = _interopRequireDefault(_z80Js);
 
+// Flux
+
+var _actionsLogActionsJs = require('../../actions/LogActions.js');
+
 // Basic timer registers
 var _div = 0;
 var _tma = 0;
@@ -1413,7 +1530,7 @@ var _clock = {
 };
 
 var Timer = {
-  reset: function reset(cb) {
+  reset: function reset() {
     _div = 0;
     _tma = 0;
     _tima = 0;
@@ -1421,7 +1538,7 @@ var Timer = {
     _clock.main = 0;
     _clock.sub = 0;
     _clock.div = 0;
-    cb(null, 'Reset');
+    setTimeout(_actionsLogActionsJs.log, 1, 'timer', 'Reset');
   },
 
   step: function step() {
@@ -1501,8 +1618,8 @@ var Timer = {
 exports['default'] = Timer;
 module.exports = exports['default'];
 
-},{"./mmu.js":16,"./z80.js":17}],15:[function(require,module,exports){
-// GameBoy components
+},{"../../actions/LogActions.js":2,"./mmu.js":18,"./z80.js":19}],17:[function(require,module,exports){
+// Flux
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -1510,6 +1627,10 @@ Object.defineProperty(exports, '__esModule', {
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _actionsLogActionsJs = require('../../actions/LogActions.js');
+
+// Game Boy components
 
 var _mmuJs = require('./mmu.js');
 
@@ -1519,32 +1640,34 @@ var _z80Js = require('./z80.js');
 
 var _z80Js2 = _interopRequireDefault(_z80Js);
 
-// TODO: encapsulate vram + oam
-// Memory
-var _vram;
-var _tileMap0;
-var _tileMap1;
-
-// Drawing area
-var _imageData;
-/**
- * @param _screen Uint32Array Allows us to address each pixel at each index
- */
-var _screen;
-var _context;
-var _palette = {};
-var _tileSet = [];
-
-// The background is one big map, so it makes sense to manage in its own canvas
-var _bgLayer;
-var _bgCtx;
-
 // Constants
 var WIDTH = 160;
 var HEIGHT = 144;
 var ADDR_TILES = 0x0000;
 var ADDR_BGMAP0 = 0x1800;
 var ADDR_BGMAP1 = 0x1C00;
+
+// TODO: encapsulate vram + oam
+// Memory
+var _vram = undefined;
+var _tileMap0 = undefined;
+var _tileMap1 = undefined;
+
+// Drawing area
+var _imageData = undefined;
+/**
+ * @param _screen Uint32Array Allows us to address each pixel at each index
+ */
+var _screen = undefined;
+var _context = undefined;
+var _palette = {};
+var _tileSet = [];
+
+// The background is one big map, so it makes sense to manage in its own canvas
+var _bgLayer = undefined;
+var _bgCtx = undefined;
+
+var _scrl = [0, 0];
 
 // Build a palette that we can assign using the js engine's native endianness
 function endFix(array) {
@@ -1560,19 +1683,12 @@ var GPU = {
   _reg: [],
   _objdata: [],
   _objdatasorted: [],
-  _palette: {
-    'bg': [],
-    'obj0': [],
-    'obj1': []
-  },
   _scanrow: [],
 
   _curline: 0,
   _linemode: 0,
   _modeclocks: 0,
 
-  _yscrl: 0,
-  _xscrl: 0,
   _raster: 0,
   _ints: 0,
 
@@ -1583,16 +1699,12 @@ var GPU = {
 
   _objsize: 0,
 
-  reset: function reset(cb) {
-    var white = [0xFF, 0xFF, 0xFF, 0xFF];
+  reset: function reset() {
     // Zero out memory
     _vram = new Uint8Array(0x2000);
     _tileMap0 = _vram.subarray(0x1800, 0x1C00);
 
     GPU._oam = new Uint8Array(0xA0);
-    _palette.bg = new Uint8Array(white);
-    _palette.obj0 = new Uint8Array(white);
-    _palette.obj1 = new Uint8Array(white);
 
     // Setup an offscreen background, since this has a bunch of tiles
     _bgLayer = document.createElement('canvas');
@@ -1612,8 +1724,8 @@ var GPU = {
     GPU._curline = 0;
     GPU._linemode = 2;
     GPU._modeclocks = 0;
-    GPU._yscrl = 0;
-    GPU._xscrl = 0;
+    _scrl[0] = 0;
+    _scrl[1] = 0;
     GPU._raster = 0;
     GPU._ints = 0;
 
@@ -1638,9 +1750,8 @@ var GPU = {
       };
     }
 
-    if (cb instanceof Function) {
-      cb(null, 'Reset');
-    }
+    // Defer logging until after action
+    setTimeout(_actionsLogActionsJs.log, 1, 'gpu', 'Reset');
   },
 
   /**
@@ -1650,7 +1761,7 @@ var GPU = {
     _vram[addr] = val;
 
     // For performance, update our rendered tiles with the vram gets updated
-    if (addr >= ADDR_BGMAP0) {
+    if (addr >= ADDR_BGMAP0 && addr < ADDR_BGMAP0 + _tileMap0.length) {
       GPU.updateBackground(addr);
     } else {
       GPU.updateTile(addr, val);
@@ -1683,6 +1794,7 @@ var GPU = {
         _screen[i] = _colors[3];
       }
 
+      // XXX putImageData is apparently way slower than drawImage
       _context.putImageData(_imageData, 0, 0);
     }
   },
@@ -1692,7 +1804,7 @@ var GPU = {
     for (var tid = 0, x = 0, y = 0, len = _tileMap0.length; tid < len; tid++) {
       _bgCtx.putImageData(_tileSet[_tileMap0[tid]], x, y);
       x += 8;
-      if (x > 255) {
+      if (x > 0xFF) {
         x = 0;
         y += 8;
       }
@@ -1702,7 +1814,9 @@ var GPU = {
   // Update a single tile
   updateBackground: function updateBackground(addr) {
     var tid = addr - ADDR_BGMAP0;
-    _bgCtx.putImageData(_tileSet[_tileMap0[tid]], tid % 32 << 3, tid >> 5 << 3);
+    if (_bgCtx) {
+      _bgCtx.putImageData(_tileSet[_tileMap0[tid]], tid % 32 << 3, tid >> 5 << 3);
+    }
   },
 
   checkline: function checkline(ticks) {
@@ -1719,7 +1833,7 @@ var GPU = {
           if (GPU._curline == 143) {
             GPU._linemode = 1;
             _context.putImageData(_imageData, 0, 0);
-            _context.drawImage(_bgLayer, GPU._xscrl, GPU._yscrl);
+            _context.drawImage(_bgLayer, _scrl[0], _scrl[1]);
             _mmuJs2['default']._if |= 1;
           } else {
             GPU._linemode = 2;
@@ -1734,7 +1848,7 @@ var GPU = {
         if (GPU._modeclocks >= 114) {
           GPU._modeclocks = 0;
           GPU._curline++;
-          if (GPU._curline > 153) {
+          if (GPU._curline > 0x99) {
             GPU._curline = 0;
             GPU._linemode = 2;
           }
@@ -1865,16 +1979,15 @@ var GPU = {
 
     // Lookup which row of the tile this address refers to
     var y = saddr >> 1 & 7;
-    var sx;
 
     // Grab the subarray for the line we're updating
     // ImageData is 4 bytes per pixel, so each line is 4 bytes * 8 pixels / line * line
     var line = _tileSet[tile].data.subarray(y << 5, 1 + y << 5);
 
     // X is cartesian, sx is the bit offset to mask
-    for (var x = 0, _sx = 0x80; x < 32; x += 4, _sx = _sx >> 1) {
+    for (var x = 0, sx = 0x80; x < 32; x += 4, sx = sx >> 1) {
       // Grab the grey by mapping 0-3, taken from 2 bits in vram, to our palette
-      var grey = _greys[(_vram[saddr] & _sx ? 1 : 0) | (_vram[saddr + 1] & _sx ? 2 : 0)];
+      var grey = _greys[(_vram[saddr] & sx ? 1 : 0) | (_vram[saddr + 1] & sx ? 2 : 0)];
       line[x] = grey;
       line[x + 1] = grey;
       line[x + 2] = grey;
@@ -1883,8 +1996,8 @@ var GPU = {
   },
 
   updateoam: function updateoam(addr, val) {
-    addr -= 0xFE00;
     var obj = addr >> 2;
+    addr -= 0xFE00;
     if (obj < 40) {
       switch (addr & 3) {
         case 0:
@@ -1921,10 +2034,10 @@ var GPU = {
         return (GPU._curline == GPU._raster ? 4 : 0) | GPU._linemode;
 
       case 2:
-        return GPU._yscrl;
+        return _scrl[1];
 
       case 3:
-        return GPU._xscrl;
+        return _scrl[0];
 
       case 4:
         return GPU._curline;
@@ -1951,15 +2064,16 @@ var GPU = {
         break;
 
       case 2:
-        GPU._yscrl = val;
+        _scrl[1] = val;
         break;
 
       case 3:
-        GPU._xscrl = val;
+        _scrl[0] = val;
         break;
 
       case 5:
         GPU._raster = val;
+        break;
 
       // OAM DMA
       case 6:
@@ -1973,24 +2087,14 @@ var GPU = {
 
       // BG palette mapping
       case 7:
-        for (var i = 0; i < 4; i++) {
-          // Only 2-bits used for palette
-          _palette.bg[i] = _colors[val >> i * 2 & 3];
-        }
         break;
 
       // OBJ0 palette mapping
       case 8:
-        for (var i = 0; i < 4; i++) {
-          _palette.obj0[i] = _colors[val >> i * 2 & 3];
-        }
         break;
 
       // OBJ1 palette mapping
       case 9:
-        for (var i = 0; i < 4; i++) {
-          _palette.obj1[i] = _colors[val >> i * 2 & 3];
-        }
         break;
     }
   }
@@ -1999,7 +2103,8 @@ var GPU = {
 exports['default'] = GPU;
 module.exports = exports['default'];
 
-},{"./mmu.js":16,"./z80.js":17}],16:[function(require,module,exports){
+},{"../../actions/LogActions.js":2,"./mmu.js":18,"./z80.js":19}],18:[function(require,module,exports){
+// Flux
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2007,6 +2112,10 @@ Object.defineProperty(exports, '__esModule', {
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _actionsLogActionsJs = require('../../actions/LogActions.js');
+
+// Game Boy
 
 var _gpuJs = require('./gpu.js');
 
@@ -2052,7 +2161,7 @@ var MMU = {
     return MMU._rom;
   },
 
-  reset: function reset(cb) {
+  reset: function reset() {
     MMU._wram = new Uint8Array(0x2000);
     MMU._eram = new Uint8Array(0x8000);
     MMU._zram = new Uint8Array(0x7f);
@@ -2072,21 +2181,21 @@ var MMU = {
     MMU._romoffs = 0x4000;
     MMU._ramoffs = 0;
 
-    cb(null, { msg: 'Reset' });
+    setTimeout(_actionsLogActionsJs.log, 1, 'mmu', 'Reset');
   },
 
   /**
    * Load a buffer as the ROM
    * @param ArrayBuffer buffer The ROM itself
    */
-  load: function load(buffer, cb) {
+  load: function load(buffer) {
     MMU._rom = new Uint8Array(buffer);
     MMU._carttype = MMU._rom[0x0147];
 
-    cb(null, { msg: 'ROM loaded, ' + MMU._rom.length + ' bytes' });
+    setTimeout(_actionsLogActionsJs.log, 1, 'mmu', 'ROM loaded, ' + MMU._rom.length + ' bytes');
   },
 
-  rb: function rb(addr, cb) {
+  rb: function rb(addr) {
     // TODO: this could be _way_ simpler if simply using a DataView
     switch (addr & 0xF000) {
       // ROM bank 0
@@ -2094,7 +2203,7 @@ var MMU = {
         if (MMU._inbios) {
           if (addr < 0x0100) return MMU._bios[addr];else if (_z80Js2['default'].getPC() == 0x0100) {
             MMU._inbios = 0;
-            cb(null, { msg: 'Leaving BIOS' });
+            setTimeout(_actionsLogActionsJs.log, 1, 'mmu', 'Leaving BIOS');
           }
         } else {
           return MMU._rom[addr];
@@ -2343,7 +2452,7 @@ var MMU = {
 exports['default'] = MMU;
 module.exports = exports['default'];
 
-},{"./Keypad.js":13,"./Timer.js":14,"./gpu.js":15,"./z80.js":17}],17:[function(require,module,exports){
+},{"../../actions/LogActions.js":2,"./Keypad.js":15,"./Timer.js":16,"./gpu.js":17,"./z80.js":19}],19:[function(require,module,exports){
 /**
  * jsGB: Z80 core
  * Joshua Koudys, Jul 2015
@@ -2365,6 +2474,10 @@ var _mmuJs2 = _interopRequireDefault(_mmuJs);
 var _DebugJs = require('./Debug.js');
 
 var _DebugJs2 = _interopRequireDefault(_DebugJs);
+
+// Flux
+
+var _actionsLogActionsJs = require('../../actions/LogActions.js');
 
 /**
  * Flag constants
@@ -2430,7 +2543,7 @@ var Z80 = {
   // TODO: add speed modes for GBC support
   speed: 4190000,
 
-  reset: function reset(cb) {
+  reset: function reset() {
     //CPU Registers and Flags:
     regAF[0] = 0x01B0;
     regBC[0] = 0x0013;
@@ -2442,7 +2555,7 @@ var Z80 = {
     Z80._halt = 0;
     Z80._stop = 0;
     interruptsEnabled = true;
-    cb(null, { msg: 'Reset' });
+    setTimeout(_actionsLogActionsJs.log, 1, 'z80', 'Reset');
   },
 
   isInterruptable: function isInterruptable() {
@@ -2612,6 +2725,7 @@ var _ops = {
     regHL[0] = _mmuJs2['default'].rw(i);
     return 20;
   },
+
   LDmmHL: function LDmmHL() {
     var i = _mmuJs2['default'].rw(regPC[0]);
     regPC[0] += 2;
@@ -2876,7 +2990,9 @@ var _ops = {
   subcReg: function subcReg(register) {
     var sum = regA[0] - register[0] - (regF[0] & F_CARRY ? 1 : 0);
     regA[0] = sum;
-    var flags = F_OP | (regA[0] ? 0 : F_ZERO) | (sum < 0 ? F_CARRY : 0);
+
+    // TODO: test carry register
+    regF[0] = F_OP | (regA[0] ? 0 : F_ZERO) | (sum < 0 ? F_CARRY : 0);
     if ((regA[0] ^ register[0] ^ sum) & 0x10) regF[0] |= F_HCARRY;
     return 4;
   },
@@ -2943,7 +3059,7 @@ var _ops = {
   },
 
   /**
-   * DAA - for dealing with 
+   * DAA - for dealing with BCD-encoding
    * 0x27
    */
   DAA: function DAA() {
@@ -2997,6 +3113,7 @@ var _ops = {
     regF[0] = regA[0] ? 0 : F_ZERO;
     return 8;
   },
+
   ORn: function ORn() {
     regA[0] |= _mmuJs2['default'].rb(regPC[0]);
     regPC[0]++;
@@ -3113,9 +3230,7 @@ var _ops = {
     * @return int Clock ticks
     */
   setMem: function setMem(bitmask) {
-    var i = _mmuJs2['default'].rb(regHL[0]);
-    i |= bitmask;
-    _mmuJs2['default'].wb(regHL[0], i);
+    _mmuJs2['default'].wb(regHL[0], _mmuJs2['default'].rb(regHL[0]) | bitmask);
     return 16;
   },
 
@@ -3394,9 +3509,13 @@ var _ops = {
     regF[0] = regA[0] ? 0 : F_ZERO;
     return 4;
   },
+
   NEG: function NEG() {
     regA[0] = 0 - regA[0];
-    regF[0] = regA[0] < 0 ? F_CARRY : 0;
+
+    // TODO: test negative check worked
+    // Check if our sign bit was set
+    regF[0] = regA[0] & 0x80 ? F_CARRY : 0;
     if (!regA[0]) regF[0] |= F_ZERO;
     return 8;
   },
@@ -3406,6 +3525,7 @@ var _ops = {
     regF[0] = (regF[0] & ~F_CARRY) + ci;
     return 4;
   },
+
   SCF: function SCF() {
     regF[0] |= F_CARRY;
     return 4;
@@ -3481,10 +3601,12 @@ var _ops = {
     regPC[0] = _mmuJs2['default'].rw(regPC[0]);
     return 12;
   },
+
   JPHL: function JPHL() {
     regPC[0] = regHL[0];
     return 4;
   },
+
   JPNZnn: function JPNZnn() {
     if ((regF[0] & F_ZERO) === 0x00) {
       regPC[0] = _mmuJs2['default'].rw(regPC[0]);
@@ -3494,6 +3616,7 @@ var _ops = {
       return 12;
     }
   },
+
   JPZnn: function JPZnn() {
     if ((regF[0] & F_ZERO) === F_ZERO) {
       regPC[0] = _mmuJs2['default'].rw(regPC[0]);
@@ -3503,6 +3626,7 @@ var _ops = {
       return 12;
     }
   },
+
   JPNCnn: function JPNCnn() {
     if ((regF[0] & F_CARRY) === 0) {
       regPC[0] = _mmuJs2['default'].rw(regPC[0]);
@@ -3512,6 +3636,7 @@ var _ops = {
       return 12;
     }
   },
+
   JPCnn: function JPCnn() {
     if ((regF[0] & F_CARRY) !== 0) {
       regPC[0] = _mmuJs2['default'].rw(regPC[0]);
@@ -3530,6 +3655,7 @@ var _ops = {
     regPC[0] += i + 1;
     return 12;
   },
+
   JRNZn: function JRNZn() {
     var i = _mmuJs2['default'].rb(regPC[0]);
     if (i > 0x7F) i = -(~i + 1 & 0xFF);
@@ -3541,6 +3667,7 @@ var _ops = {
       return 8;
     }
   },
+
   JRZn: function JRZn() {
     var i = _mmuJs2['default'].rb(regPC[0]);
     if (i > 0x7F) i = -(~i + 1 & 0xFF);
@@ -3552,6 +3679,7 @@ var _ops = {
       return 8;
     }
   },
+
   JRNCn: function JRNCn() {
     var i = _mmuJs2['default'].rb(regPC[0]);
     if (i > 0x7F) i = -(~i + 1 & 0xFF);
@@ -3563,6 +3691,7 @@ var _ops = {
       return 8;
     }
   },
+
   JRCn: function JRCn() {
     var i = _mmuJs2['default'].rb(regPC[0]);
     if (i > 0x7F) i = -(~i + 1 & 0xFF);
@@ -3831,7 +3960,7 @@ module.exports = exports['default'];
 
 // TODO restore registers
 
-},{"./Debug.js":12,"./mmu.js":16}],18:[function(require,module,exports){
+},{"../../actions/LogActions.js":2,"./Debug.js":14,"./mmu.js":18}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4134,7 +4263,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /**
  * Copyright (c) 2014-2015, Facebook, Inc.
  * All rights reserved.
@@ -4146,7 +4275,7 @@ function isUndefined(arg) {
 
 module.exports.Dispatcher = require('./lib/Dispatcher')
 
-},{"./lib/Dispatcher":20}],20:[function(require,module,exports){
+},{"./lib/Dispatcher":22}],22:[function(require,module,exports){
 /*
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -4398,7 +4527,7 @@ var _prefix = 'ID_';
 
 module.exports = Dispatcher;
 
-},{"./invariant":21}],21:[function(require,module,exports){
+},{"./invariant":23}],23:[function(require,module,exports){
 /**
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -4453,4 +4582,4 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 
-},{}]},{},[9,2]);
+},{}]},{},[10,3]);

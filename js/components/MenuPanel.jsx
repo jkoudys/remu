@@ -1,4 +1,5 @@
 import EmuStore from '../stores/EmuStore.js';
+import LogStore from '../stores/LogStore.js';
 
 // Time formatter
 const _fmt = Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'});
@@ -54,20 +55,23 @@ class SaveStates extends React.Component {
 }
 
 class EmulatorLog extends React.Component {
+  constructor() {
+    super();
+    this.state = {startTime: Date.now()};
+  }
+
   render() {
     return (
       <section id="emulatorlog">
         <h3><i className="fa fa-list" /> Log</h3>
         <table>
-          {this.props.log.map(function(entry, i) {
-            return (
+          {this.props.log.map((entry, i) =>
               <tr key={'entry' + i}>
-                <td>{Math.floor(entry.time / 1000) + 's'}</td>
+                <td>{Math.floor((entry.time - this.state.startTime) / 1000) + 's'}</td>
                 <td>{entry.component}</td>
                 <td>{entry.msg}</td>
               </tr>
-              );
-          })}
+          )}
         </table>
       </section>
     );
@@ -77,7 +81,11 @@ class EmulatorLog extends React.Component {
 class MenuPanel extends React.Component {
   constructor() {
     super();
-    this.state = {open: (document.body.offsetWidth > 1400), submenu: null};
+    this.state = {
+      open: (document.body.offsetWidth > 1400),
+      submenu: null,
+      log: []
+    };
     this.handleClose = this.handleClose.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
   }
@@ -91,22 +99,31 @@ class MenuPanel extends React.Component {
   }
 
   componentWillMount() {
-    EmuStore.addChangeListener(this._onChange.bind(this));
+    EmuStore.addChangeListener(this._onEmuChange.bind(this));
+    LogStore.addChangeListener(this._onLogChange.bind(this));
   }
 
   componentWillUnmount() {
-    EmuStore.removeChangeListener(this._onChange);
+    EmuStore.removeChangeListener(this._onEmuChange);
+    LogStore.removeChangeListener(this._onLogChange);
   }
 
-  _onChange() {
-    this.setState({});
+  _onEmuChange() {
+    this.setState({
+      romProps: EmuStore.getRomInfo()
+    });
+  }
+
+  _onLogChange() {
+    this.setState({
+      log: LogStore.getLog()
+    });
   }
 
   render() {
     var menuToggle;
     var back;
     var romInfo;
-    var romProps = EmuStore.getRomInfo();
 
     if (!this.state.open) {
       menuToggle = <button key="menutoggle" className="menutoggle" onClick={this.handleOpen}><i className="fa fa-chevron-left" /> menu</button>;
@@ -116,8 +133,8 @@ class MenuPanel extends React.Component {
       back = <button key="back" className="back"><i className="fa fa-chevron-left" /></button>
     }
 
-    if (romProps) {
-      romInfo = <RomInfo {...romProps} />;
+    if (this.state.romProps) {
+      romInfo = <RomInfo {...this.state.romProps} />;
     }
 
     return (
@@ -139,7 +156,7 @@ class MenuPanel extends React.Component {
           </section>
           {romInfo}
           <SaveStates />
-          <EmulatorLog log={EmuStore.getLog()} />
+          <EmulatorLog log={this.state.log} />
         </section>
       </aside>
     );
