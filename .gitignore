@@ -1,3 +1,4 @@
 *.gb
 *.swp
 node_modules
+public/js/gameboy-emulator.js
