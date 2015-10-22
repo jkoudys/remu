@@ -11,7 +11,7 @@ const Debug = {
    * @param int opcode
    * @return string Readable instruction
    */
-  disAsm: function(opcode) {
+  disAsm(opcode) {
     return instructionTable[opcode];
   }
 };

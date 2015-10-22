@@ -4,31 +4,31 @@ import LogStore from '../stores/LogStore.js';
 // Time formatter
 const _fmt = Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'});
 
-const RomInfo = props => (
+const RomInfo = ({filename, name, size, type}) => (
   <section id="rominfo">
     <h3>
-      <i className="fa fa-table" /> {props.name || props.filename}
+      <i className="fa fa-table" /> {name || filename}
     </h3>
     <dl>
       <dt>Filename</dt>
-      <dd>{props.filename}</dd>
+      <dd>{filename}</dd>
       <dt>Size</dt>
-      <dd>{(props.size >> 10) + ' KiB'}</dd>
+      <dd>{(size >> 10) + ' KiB'}</dd>
       <dt>Supported Systems</dt>
-      <dd>{props.systems.join(', ')}</dd>
+      <dd>{systems.join(', ')}</dd>
       <dt>Type</dt>
-      <dd>{props.type}</dd>
+      <dd>{type}</dd>
     </dl>
   </section>
 );
 
-const SaveStates = props => (
+const SaveStates = ({saves}) => (
   <section id="savestates">
     <h3>
       <i className="fa fa-database" /> Save Games
     </h3>
     <ul>
-      {props.saves.map(save => <li key={save.time}>><a className="loadsave">{_fmt.format(save.time)}</a></li>)}
+      {saves.map(save => <li key={save.time}>><a className="loadsave">{_fmt.format(save.time)}</a></li>)}
       <li>
         <a className="newsave">Save New State</a>
       </li>
@@ -44,15 +44,15 @@ const SaveStates = props => (
   </section>
 );
 
-const EmulatorLog = props => (
+const EmulatorLog = ({log}) => (
   <section id="emulatorlog">
     <h3>
       <i className="fa fa-list" /> Log
     </h3>
     <table>
-      {this.props.log.map((entry, i) => (
+      {log.map((entry, i) => (
         <tr key={'entry' + i}>
-          <td>{Math.floor((entry.time - props.log[0].time) / 1000) + 's'}</td>
+          <td>{Math.floor((entry.time - log[0].time) / 1000) + 's'}</td>
           <td>{entry.component}</td>
           <td>{entry.msg}</td>
         </tr>
