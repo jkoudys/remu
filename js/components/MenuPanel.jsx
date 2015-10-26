@@ -4,7 +4,7 @@ import LogStore from '../stores/LogStore.js';
 // Time formatter
 const _fmt = Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'});
 
-const RomInfo = ({filename, name, size, type}) => (
+const RomInfo = ({filename, name, size, type, systems}) => (
   <section id="rominfo">
     <h3>
       <i className="fa fa-table" /> {name || filename}
@@ -28,7 +28,7 @@ const SaveStates = ({saves}) => (
       <i className="fa fa-database" /> Save Games
     </h3>
     <ul>
-      {saves.map(save => <li key={save.time}>><a className="loadsave">{_fmt.format(save.time)}</a></li>)}
+      {saves.map(({time}) => <li key={time}>><a className="loadsave">{_fmt.format(time)}</a></li>)}
       <li>
         <a className="newsave">Save New State</a>
       </li>
@@ -50,15 +50,24 @@ const EmulatorLog = ({log}) => (
       <i className="fa fa-list" /> Log
     </h3>
     <table>
-      {log.map((entry, i) => (
-        <tr key={'entry' + i}>
-          <td>{Math.floor((entry.time - log[0].time) / 1000) + 's'}</td>
-          <td>{entry.component}</td>
-          <td>{entry.msg}</td>
-        </tr>
-      ))}
+      <tbody>
+        {log.map(({time, component, msg}, i) => (
+          <tr key={'entry' + i}>
+            <td>{Math.floor((time - log[0].time) / 1000) + 's'}</td>
+            <td>{component}</td>
+            <td>{msg}</td>
+          </tr>
+          ))}
+      </tbody>
     </table>
   </section>
+);
+
+const MenuOpen = ({onClick}) => (
+  <button key="menutoggle" className="menutoggle" onClick={onClick}>
+    <i className="fa fa-chevron-left" />
+    &nbsp;menu
+  </button>
 );
 
 export default class MenuPanel extends React.Component {
@@ -69,16 +78,6 @@ export default class MenuPanel extends React.Component {
       submenu: null,
       log: []
     };
-    this.handleClose = this.handleClose.bind(this);
-    this.handleOpen = this.handleOpen.bind(this);
-  }
-
-  handleClose() {
-    this.setState({open: false});
-  }
-
-  handleOpen() {
-    this.setState({open: true});
   }
 
   componentWillMount() {
@@ -109,7 +108,7 @@ export default class MenuPanel extends React.Component {
     let romInfo;
 
     if (!this.state.open) {
-      menuToggle = <button key="menutoggle" className="menutoggle" onClick={this.handleOpen}><i className="fa fa-chevron-left" /> menu</button>;
+      menuToggle = <MenuOpen onClick={() => this.setState({open: true})} />;
     }
 
     if (this.state.submenu) {
@@ -124,7 +123,7 @@ export default class MenuPanel extends React.Component {
       <aside className={'menupanel' + (this.state.open ? ' open' : '')}>
         <nav className="controls">
           <h1>Menu</h1>
-          <button className="close" onClick={this.handleClose}><i className="fa fa-times" /></button>
+          <button className="close" onClick={() => this.setState({open: false})}><i className="fa fa-times" /></button>
           {back}
           {menuToggle}
         </nav>

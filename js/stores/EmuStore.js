@@ -45,7 +45,7 @@ let _frameInterval;
 function pauseEmulation() {
   clearInterval(_runInterval);
   clearInterval(_frameInterval);
-  Z80._stop = 1;
+  Z80.stop();
 }
 
 /**
@@ -65,8 +65,8 @@ function resetEmulation() {
  * Start the emulator up!
  */
 function runEmulation() {
-  // Clear the 'stopped' status'
-  Z80._stop = 0;
+  // Make sure we've started the CPU loop
+  Z80.start();
 
   // Start running - we run as many cycles as the GB would normally in that time
   // Intervals' are in ms, so (1000 ms/s) / (60 frames/s) tells us how many ms
@@ -155,7 +155,7 @@ function executeFrame() {
     }
 
     Timer.inc(opTicks);
-    if (Z80._stop) {
+    if (Z80.isStopped()) {
       pauseEmulation();
       break;
     }

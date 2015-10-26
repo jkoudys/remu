@@ -1,6 +1,6 @@
 import * as EmuActions from '../actions/EmuActions.js';
 
-class Screen extends React.Component {
+export default class Screen extends React.Component {
   componentDidMount() {
     // Since we currently only support one device at a time, assume the last
     // Screen is the one the device should render to. May never change, as
@@ -14,5 +14,3 @@ class Screen extends React.Component {
     );
   }
 }
-
-export default Screen;

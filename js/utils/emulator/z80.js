@@ -83,8 +83,8 @@ function reset() {
   regSP[0] = 0xFFFE;
   regPC[0] = 0x0100;
 
-  Z80._halt = 0;
-  Z80._stop = 0;
+  _halt = false;
+  _stop = false;
   interruptsEnabled = true;
   setTimeout(log, 1, 'z80', 'Reset');
 }
@@ -94,7 +94,7 @@ function isInterruptable() {
 }
 
 function isHalted() {
-  return Z80._halt;
+  return _halt;
 }
 
 function disableInterrupts() {
@@ -130,6 +130,21 @@ function getPC() {
 }
 
 /**
+ * Stop/start runtime
+ */
+function stop() {
+  _stop = true;
+}
+
+function start() {
+  _stop = false;
+}
+
+function isStopped() {
+  return _stop;
+}
+
+/**
  * Get a nicely-formatted object with the registers state
  * @return object
  */
@@ -153,7 +168,7 @@ function  getRegisters() {
   };
 }
 
-export default {reset, getRegisters};
+export default {reset, stop, start, exec, isInterruptable, isStopped, getRegisters, getPC};
 
 const _ops = {
   /*--- Load/store ---*/
@@ -1363,7 +1378,7 @@ const _ops = {
 
   HALT() {
     if (interruptsEnabled) {
-      Z80._halt = true;
+      _halt = true;
     }
     return 4;
   },
@@ -1404,7 +1419,7 @@ const _ops = {
     /*Undefined map entry*/
     const opc = regPC[0] - 1;
     setTimeout(log, 1, 'z80', 'Unimplemented instruction ' + instruction + ' at $' + opc.toString(16) + ', stopping');
-    Z80._stop = 1;
+    _stop = 1;
   }
 };
 
@@ -1843,5 +1858,3 @@ const daaTable = new Uint16Array([
   0x8A50, 0x8B50, 0x8C50, 0x8D50, 0x8E50, 0x8F50, 0x9050, 0x9150,
   0x9250, 0x9350, 0x9450, 0x9550, 0x9650, 0x9750, 0x9850, 0x9950,
 ]);
-
-export default Z80;

@@ -3,7 +3,6 @@ import {log} from '../../actions/LogActions.js';
 
 // Game Boy components
 import MMU from './mmu.js';
-import Z80 from './z80.js';
 
 // Constants
 const WIDTH = 160;
@@ -237,99 +236,6 @@ const GPU = {
         if (GPU._modeclocks >= 43) {
           GPU._modeclocks = 0;
           _linemode = 0;
-          /*
-          if (._lcdon) {
-            if (GPU._bgon) {
-              let linebase = GPU._curscan;
-              let mapbase = GPU._bgmapbase + ((((GPU._curline + GPU._yscrl) & 0xFF) >> 3) << 5);
-              let y = (GPU._curline + GPU._yscrl) & 7;
-              let x = GPU._xscrl & 7;
-              let t = (GPU._xscrl >> 3) & 0x1F;
-              let pixel;
-              let w = WIDTH;
-
-              if (GPU._bgtilebase) {
-                let tile = _vram[mapbase + t];
-                if (tile < 0x80) tile = 0x100 + tile;
-                let tilerow = _tileSet[tile][y];
-                do {
-                  GPU._scanrow[WIDTH - x] = tilerow[x];
-                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
-                  x++;
-                  if (x == 8) {
-                    t = (t + 1) & 0x1F;
-                    x = 0;
-                    tile = _vram[mapbase + t];
-                    if (tile < 0x80) tile = 0x100 + tile;
-                    tilerow = _tileSet[tile][y];
-                  }
-                  linebase += 4;
-                } while (--w);
-              } else {
-                let tilerow = _tileSet[_vram[mapbase + t]][y];
-                do {
-                  GPU._scanrow[WIDTH - x] = tilerow[x];
-                  _imageData.data[linebase] = _palette.bg[tilerow[x]];
-                  _imageData.data[linebase+1] = _palette.bg[tilerow[x]];
-                  _imageData.data[linebase+2] = _palette.bg[tilerow[x]];
-                  x++;
-                  if (x == 8) {
-                    t = (t + 1) & 0x1F;
-                    x = 0;
-                    tilerow = _tileSet[_vram[mapbase + t]][y];
-                  }
-                  linebase += 4;
-                } while (--w);
-              }
-            }
-            if (GPU._objon) {
-              let cnt = 0;
-              if (!GPU._objsize) {
-                let tilerow;
-                let obj;
-                let pal;
-                let pixel;
-                let x;
-                let linebase = GPU._curscan;
-                for (let i = 0; i < 40; i++) {
-                  obj = GPU._objdatasorted[i];
-                  if (obj.y <= GPU._curline && (obj.y + 8) > GPU._curline) {
-                    if (obj.yflip)
-                      tilerow = _tileSet[obj.tile][7 - (GPU._curline - obj.y)];
-                    else
-                      tilerow = _tileSet[obj.tile][GPU._curline - obj.y];
-
-                    if (obj.palette) pal = _palette.obj1;
-                    else pal = _palette.obj0;
-
-                    linebase = (GPU._curline * WIDTH + obj.x) << 2;
-                    if (obj.xflip) {
-                      for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
-                          if (tilerow[7 - x] && (obj.prio || !GPU._scanrow[x])) {
-                            _imageData.data[linebase] = pal[tilerow[7 - x]];
-                          }
-                        }
-                        linebase += 4;
-                      }
-                    } else {
-                      for (x = 0; x < 8; x++) {
-                        if (obj.x + x >= 0 && obj.x + x < WIDTH) {
-                          if (tilerow[x] && (obj.prio || !GPU._scanrow[x])) {
-                            _imageData.data[linebase] = pal[tilerow[x]];
-                          }
-                        }
-                        linebase += 4;
-                      }
-                    }
-                    cnt++;
-                    if (cnt > 10) break;
-                  }
-                }
-              }
-            }
-          }
-          */
         }
         break;
     }

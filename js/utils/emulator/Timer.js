@@ -3,7 +3,6 @@
  */
 
 import MMU from './mmu.js';
-import Z80 from './z80.js';
 
 // Flux
 import {log} from '../../actions/LogActions.js';
@@ -22,7 +21,7 @@ const _clock = {
 };
 
 const Timer = {
-  reset: function() {
+  reset() {
     _div = 0;
     _tma = 0;
     _tima = 0;
@@ -33,7 +32,7 @@ const Timer = {
     setTimeout(log, 1, 'timer', 'Reset');
   },
 
-  step: function() {
+  step() {
     _tima++;
     _clock.main = 0;
     if (_tima > 0xFF) {
@@ -42,7 +41,7 @@ const Timer = {
     }
   },
 
-  inc: function(ticks) {
+  inc(ticks) {
     var oldclk = _clock.main;
 
     _clock.sub += ticks;
@@ -76,7 +75,7 @@ const Timer = {
     }
   },
 
-  rb: function(addr) {
+  rb(addr) {
     switch (addr) {
       case 0xFF04:
         return _div;
@@ -89,7 +88,7 @@ const Timer = {
     }
   },
 
-  wb: function(addr, val) {
+  wb(addr, val) {
     switch (addr) {
       case 0xFF04:
         _div = 0;

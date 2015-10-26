@@ -4,7 +4,7 @@
  * @return string
  */
 export function stringify(array) {
-  var retStr = '';
+  let retStr = '';
 
   for (var i = 0, len = array.length; i < len && array[i] !== 0; i++) {
     retStr += String.fromCharCode(array[i]);
@@ -20,7 +20,7 @@ export function stringify(array) {
  * @return array<string> Set of supported platforms
  */
 export function supportedSystems(rom) {
-  var supported = [];
+  const supported = [];
 
   // First check the GB/GBC flag
   switch (rom[0x0143]) {
