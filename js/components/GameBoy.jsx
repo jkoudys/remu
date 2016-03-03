@@ -14,24 +14,22 @@ function buildState() {
   };
 }
 
-class GameBoy extends React.Component {
-  constructor(props) {
-    super(props);
+export default function GameBoy(props) {
+  React.Component.call(this, props);
 
-    this.state = buildState();
-  }
-
+  Object.assign(this, {
+    state: buildState(),
+    _onChange: () => this.setState(buildState()),
+  });
+}
+Object.assign(GameBoy.prototype, React.Component.prototype, {
   componentWillMount() {
-    EmuStore.addChangeListener(this._onChange.bind(this));
-  }
+    EmuStore.addChangeListener(this._onChange);
+  },
 
   componentWillUnmount() {
     EmuStore.removeChangeListener(this._onChange);
-  }
-
-  _onChange() {
-    this.setState(buildState());
-  }
+  },
 
   render() {
     let screen;
@@ -47,7 +45,5 @@ class GameBoy extends React.Component {
         <MenuPanel />
       </section>
     );
-  }
-}
-
-export default GameBoy;
+  },
+});

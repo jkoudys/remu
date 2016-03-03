@@ -65,42 +65,32 @@ const EmulatorLog = ({log}) => (
 
 const MenuOpen = ({onClick}) => (
   <button key="menutoggle" className="menutoggle" onClick={onClick}>
-    <i className="fa fa-chevron-left" />
-    &nbsp;menu
+    <i className="fa fa-chevron-left" /> menu
   </button>
 );
 
-export default class MenuPanel extends React.Component {
-  constructor() {
-    super();
-    this.state = {
+export default function MenuPanel(props) {
+  React.Componenet.call(this, props);
+  Object.assign(this, {
+    state: {
       open: (document.body.offsetWidth > 1400),
       submenu: null,
       log: []
-    };
-  }
-
+    },
+    _onEmuChange: () => this.setState({romProps: EmuStore.getRomInfo()}),
+    _onLogChange: () => this.setState({log: LogStore.getLog()})
+  });
+}
+Object.assign(MenuPanel.prototype, React.Component.prototype, {
   componentWillMount() {
-    EmuStore.addChangeListener(this._onEmuChange.bind(this));
-    LogStore.addChangeListener(this._onLogChange.bind(this));
-  }
+    EmuStore.addChangeListener(this._onEmuChange);
+    LogStore.addChangeListener(this._onLogChange);
+  },
 
   componentWillUnmount() {
     EmuStore.removeChangeListener(this._onEmuChange);
     LogStore.removeChangeListener(this._onLogChange);
-  }
-
-  _onEmuChange() {
-    this.setState({
-      romProps: EmuStore.getRomInfo()
-    });
-  }
-
-  _onLogChange() {
-    this.setState({
-      log: LogStore.getLog()
-    });
-  }
+  },
 
   render() {
     let menuToggle;
@@ -143,4 +133,4 @@ export default class MenuPanel extends React.Component {
       </aside>
     );
   }
-}
+});
