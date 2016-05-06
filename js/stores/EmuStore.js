@@ -1,7 +1,7 @@
 // Flux
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import AppDispatcher from '../dispatcher/AppDispatcher.js';
-import {ActionTypes} from '../constants/EmuConstants.js';
+import { ActionTypes } from '../constants/EmuConstants.js';
 import * as EmuActions from '../actions/EmuActions.js';
 
 // z80 emu
@@ -12,7 +12,7 @@ import Timer from '../utils/emulator/Timer.js';
 import Z80 from '../utils/emulator/z80.js';
 
 // Helpers
-import * as eh from '../utils/EmuHelper.js';
+import { stringify, supportedSystems, type } from '../utils/EmuHelper.js';
 
 // Basic event name for basic emulator state change
 const CHANGE_EVENT = 'change';
@@ -21,7 +21,7 @@ const CHANGE_EVENT = 'change';
  * Local variables to the store
  */
 let _romFileName = '';
-const _frameCounter = {start: 0, frames: 0};
+const _frameCounter = { start: 0, frames: 0 };
 let _startTime = Date.now();
 
 /**
@@ -189,15 +189,14 @@ const EmuStore = Object.assign({}, EventEmitter.prototype, {
   getRomInfo() {
     if (MMU._rom) {
       return {
-        name: eh.stringify(MMU._rom.subarray(0x0134, 0x0144)),
-        systems: eh.supportedSystems(MMU._rom),
-        type: eh.type(MMU._rom),
+        name: stringify(MMU._rom.subarray(0x0134, 0x0144)),
+        systems: supportedSystems(MMU._rom),
+        type: type(MMU._rom),
         filename: _romFileName,
-        size: MMU._rom.length
-      }
-    } else {
-      return null;
+        size: MMU._rom.length,
+      };
     }
+    return null;
   },
 
   isRomLoaded() {
@@ -211,14 +210,6 @@ const EmuStore = Object.assign({}, EventEmitter.prototype, {
   getRegisters() {
     return Z80.getRegisters();
   },
-
-  /**
-   * Get our runtime log
-   * @return {array<object>}
-   */
-  getLog() {
-    return _log;
-  }
 });
 
 EmuStore.dispatchToken = AppDispatcher.register(function(payload) {

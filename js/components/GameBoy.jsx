@@ -10,11 +10,9 @@ import Screen from './Screen.jsx';
 
 import EmuStore from '../stores/EmuStore.js';
 
-function buildState() {
-  return {
-    loaded: EmuStore.isRomLoaded()
-  };
-}
+const buildState = () => ({
+  loaded: EmuStore.isRomLoaded(),
+});
 
 export default function GameBoy(props) {
   //  React.Component.call(this, props);

@@ -1,22 +1,22 @@
-import {ActionTypes} from '../constants/EmuConstants.js';
-import {dispatch} from '../dispatcher/AppDispatcher.js';
+import { ActionTypes } from '../constants/EmuConstants.js';
+import { dispatch } from '../dispatcher/AppDispatcher.js';
 
 export function pause() {
   dispatch({
-    type: ActionTypes.EMU_PAUSE
+    type: ActionTypes.EMU_PAUSE,
   });
 }
 
 export function reset() {
   dispatch({
-    type: ActionTypes.EMU_RESET
+    type: ActionTypes.EMU_RESET,
   });
 }
 
 export function refreshFps(fps) {
   dispatch({
     type: ActionTypes.FPS_REFRESH,
-    fps: fps
+    fps,
   });
 }
 
@@ -28,8 +28,8 @@ export function refreshFps(fps) {
 export function receiveRom(rom, filename) {
   dispatch({
     type: ActionTypes.ROM_RECEIVE,
-    rom: rom,
-    filename: filename
+    rom,
+    filename,
   });
 }
 
@@ -40,6 +40,6 @@ export function receiveRom(rom, filename) {
 export function receiveCanvas(canvas) {
   dispatch({
     type: ActionTypes.CANVAS_RECEIVE,
-    canvas: canvas
+    canvas,
   });
 }

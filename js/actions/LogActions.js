@@ -1,6 +1,5 @@
-import {ActionTypes} from '../constants/EmuConstants.js';
+import { ActionTypes } from '../constants/EmuConstants.js';
 import AppDispatcher from '../dispatcher/AppDispatcher.js';
-import EmuStore from '../stores/EmuStore.js';
 
 /**
  * Add a log entry
@@ -10,7 +9,7 @@ import EmuStore from '../stores/EmuStore.js';
 export function log(component, msg) {
   AppDispatcher.dispatch({
     type: ActionTypes.LOG_APPEND,
-    component: component,
-    msg: msg
+    component,
+    msg,
   });
 }

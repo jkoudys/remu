@@ -7,7 +7,7 @@ export function stringify(array) {
   let retStr = '';
 
   for (const char of array) {
-    retStr += String.fromCharCode(array[i]);
+    retStr += String.fromCharCode(char);
   }
 
   return retStr;
@@ -51,94 +51,38 @@ export function supportedSystems(rom) {
  * @param Uint8Array rom The ROM
  * @return string The ROM type
  */
+const ROM_TYPES = new Map([
+  [0x00, 'ROM ONLY'],
+  [0x01, 'MBC1'],
+  [0x02, 'MBC1 RAM'],
+  [0x03, 'MBC1 RAM BATTERY'],
+  [0x05, 'MBC2'],
+  [0x06, 'MBC2 BATTERY'],
+  [0x08, 'ROM RAM'],
+  [0x09, 'ROM RAM BATTERY'],
+  [0x0B, 'MMM01'],
+  [0x0C, 'MMM01 RAM'],
+  [0x0D, 'MMM01 RAM BATTERY'],
+  [0x0F, 'MBC3 TIMER BATTERY'],
+  [0x10, 'MBC3 TIMER RAM BATTERY'],
+  [0x11, 'MBC3'],
+  [0x12, 'MBC3 RAM'],
+  [0x13, 'MBC3 RAM BATTERY'],
+  [0x15, 'MBC4'],
+  [0x16, 'MBC4 RAM'],
+  [0x17, 'MBC4 RAM BATTERY'],
+  [0x19, 'MBC5'],
+  [0x1A, 'MBC5 RAM'],
+  [0x1B, 'MBC5 RAM BATTERY'],
+  [0x1C, 'MBC5 RUMBLE'],
+  [0x1D, 'MBC5 RUMBLE RAM'],
+  [0x1E, 'MBC5 RUMBLE RAM BATTERY'],
+  [0xFC, 'POCKET CAMERA'],
+  [0xFD, 'BANDAI TAMA5'],
+  [0xFE, 'HUC3'],
+  [0xFF, 'HUC1 RAM BATTERY'],
+]);
+
 export function type(rom) {
-  switch (rom[0x0147]) {
-    case 0x00:
-      return 'ROM ONLY';
-    break;
-    case 0x01:
-      return 'MBC1';
-    break;
-    case 0x02:
-      return 'MBC1 RAM';
-    break;
-    case 0x03:
-      return 'MBC1 RAM BATTERY';
-    break;
-    case 0x05:
-      return 'MBC2';
-    break;
-    case 0x06:
-      return 'MBC2 BATTERY';
-    break;
-    case 0x08:
-      return 'ROM RAM';
-    break;
-    case 0x09:
-      return 'ROM RAM BATTERY';
-    break;
-    case 0x0B:
-      return 'MMM01';
-    break;
-    case 0x0C:
-      return 'MMM01 RAM';
-    break;
-    case 0x0D:
-      return 'MMM01 RAM BATTERY';
-    break;
-    case 0x0F:
-      return 'MBC3 TIMER BATTERY';
-    break;
-    case 0x10:
-      return 'MBC3 TIMER RAM BATTERY';
-    break;
-    case 0x11:
-      return 'MBC3';
-    break;
-    case 0x12:
-      return 'MBC3 RAM';
-    break;
-    case 0x13:
-      return 'MBC3 RAM BATTERY';
-    break;
-    case 0x15:
-      return 'MBC4';
-    break;
-    case 0x16:
-      return 'MBC4 RAM';
-    break;
-    case 0x17:
-      return 'MBC4 RAM BATTERY';
-    break;
-    case 0x19:
-      return 'MBC5';
-    break;
-    case 0x1A:
-      return 'MBC5 RAM';
-    break;
-    case 0x1B:
-      return 'MBC5 RAM BATTERY';
-    break;
-    case 0x1C:
-      return 'MBC5 RUMBLE';
-    break;
-    case 0x1D:
-      return 'MBC5 RUMBLE RAM';
-    break;
-    case 0x1E:
-      return 'MBC5 RUMBLE RAM BATTERY';
-    break;
-    case 0xFC:
-      return 'POCKET CAMERA';
-    break;
-    case 0xFD:
-      return 'BANDAI TAMA5';
-    break;
-    case 0xFE:
-      return 'HUC3';
-    break;
-    case 0xFF:
-      return 'HUC1 RAM BATTERY';
-    break;
-  }
+  return ROM_TYPES.get(rom[0x0147]);
 }

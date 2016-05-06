@@ -3,7 +3,9 @@ import React from 'react';
 import * as EmuActions from '../actions/EmuActions.js';
 // import Screen from './Screen.jsx';
 
-function handleLoadFile({ target: { files: [file] } }) {
+function handleLoadFile({ target }) {
+  const file = target.files[0];
+
   if (file) {
     Object.assign(new FileReader(), {
       onload() {
