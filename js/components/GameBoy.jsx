@@ -17,14 +17,14 @@ function buildState() {
 }
 
 export default function GameBoy(props) {
-  React.Component.call(this, props);
+  //  React.Component.call(this, props);
 
   Object.assign(this, {
     state: buildState(),
     _onChange: () => this.setState(buildState()),
   });
 }
-GameBoy.prototype = Object.assign(Object.create(React.Component), {
+Object.assign(GameBoy.prototype, React.Component.prototype, {
   componentWillMount() {
     EmuStore.addChangeListener(this._onChange);
   },

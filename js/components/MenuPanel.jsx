@@ -72,7 +72,7 @@ const MenuOpen = ({ onClick }) => (
 );
 
 export default function MenuPanel(props) {
-  React.Componenet.call(this, props);
+  React.Component.call(this, props);
   Object.assign(this, {
     state: {
       open: (document.body.offsetWidth > 1400),
@@ -85,7 +85,7 @@ export default function MenuPanel(props) {
     _handleCloseMenu: () => this.setState({ open: false }),
   });
 }
-Object.assign(MenuPanel.prototype, new React.Component(), {
+Object.assign(MenuPanel.prototype, React.Component.prototype, {
   componentWillMount() {
     EmuStore.addChangeListener(this._onEmuChange);
     LogStore.addChangeListener(this._onLogChange);

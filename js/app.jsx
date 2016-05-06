@@ -1,6 +1,7 @@
 /**
  * GameBoy Emulator, main app
  */
+import React from 'react';
 import { render } from 'react-dom';
 
 import Keypad from './utils/emulator/Keypad.js';
