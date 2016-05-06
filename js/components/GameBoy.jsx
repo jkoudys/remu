@@ -2,6 +2,8 @@
  * The main gameboy display
  */
 
+import React from 'react';
+
 import MenuPanel from './MenuPanel.jsx';
 import RomLoader from './RomLoader.jsx';
 import Screen from './Screen.jsx';
@@ -22,7 +24,7 @@ export default function GameBoy(props) {
     _onChange: () => this.setState(buildState()),
   });
 }
-Object.assign(GameBoy.prototype, React.Component.prototype, {
+GameBoy.prototype = Object.assign(Object.create(React.Component), {
   componentWillMount() {
     EmuStore.addChangeListener(this._onChange);
   },

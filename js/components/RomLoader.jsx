@@ -1,30 +1,26 @@
+import React from 'react';
+
 import * as EmuActions from '../actions/EmuActions.js';
-import Screen from './Screen.jsx';
+// import Screen from './Screen.jsx';
 
-function handleLoadFile(ev) {
-  const file = ev.target.files[0];
-  if (!file) {
-    return;
+function handleLoadFile({ target: { files: [file] } }) {
+  if (file) {
+    Object.assign(new FileReader(), {
+      onload() {
+        EmuActions.receiveRom(this.result, file.name);
+      },
+      onerror() {
+        console.error('Error reading file.');
+      },
+    }).readAsArrayBuffer(file);
   }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    EmuActions.receiveRom(this.result, file.name);
-  };
-
-  reader.readAsArrayBuffer(file);
 }
 
-function handleLoadUrl(url) {
-  const xhr = new XMLHttpRequest();
-  url = '/tests/tetris.gb';
-  xhr.open('GET', url);
-  xhr.responseType = 'arraybuffer';
-  xhr.onload = function() {
-    EmuActions.receiveRom(this.response, url.substring(url.lastIndexOf('/') + 1));
-  };
-
-  xhr.send();
+function handleLoadUrl(url = '/tests/tetris.gb') {
+  fetch(url)
+  .then(res => res.arrayBuffer())
+  .then(rom => EmuActions.receiveRom(rom, url.slice(url.lastIndexOf('/') + 1)))
+  .catch(({ message }) => console.error(`Failed to load ROM ${url}. ${message}`));
 }
 
 export default () => (

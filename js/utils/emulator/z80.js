@@ -8,7 +8,7 @@ import MMU from './mmu.js';
 import Debug from './Debug.js';
 
 // Flux
-import {log} from '../../actions/LogActions.js';
+import { log } from '../../actions/LogActions.js';
 
 /**
  * Flag constants
@@ -89,13 +89,9 @@ function reset() {
   setTimeout(log, 1, 'z80', 'Reset');
 }
 
-function isInterruptable() {
-  return interruptsEnabled;
-}
+const isInterruptable = () => interruptsEnabled;
 
-function isHalted() {
-  return _halt;
-}
+const isHalted = () => _halt;
 
 function disableInterrupts() {
   interruptsEnabled = false;
@@ -110,24 +106,18 @@ function enableInterrupts() {
  * the counter to the next code.
  * @return int Clock ticks
  */
-function exec() {
-  return _map[MMU.rb(regPC[0]++)]();
-}
+const exec = () => _map[MMU.rb(regPC[0]++)]();
 
 /**
  * reset to an address
  */
-function rst(addr) {
-  _ops.rst(addr);
-}
+const rst = addr => _ops.rst(addr);
 
 /**
  * Get the program counter
  * @return int
  */
-function getPC() {
-  return regPC[0];
-}
+const getPC = () =>regPC[0];
 
 /**
  * Stop/start runtime
@@ -140,33 +130,29 @@ function start() {
   _stop = false;
 }
 
-function isStopped() {
-  return _stop;
-}
+const isStopped = () => _stop;
 
 /**
  * Get a nicely-formatted object with the registers state
  * @return object
  */
-function  getRegisters() {
-  return {
-    a: regA[0],
-    b: regB[0],
-    c: regC[0],
-    d: regD[0],
-    e: regE[0],
-    f: regF[0],
-    hl: regHL[0],
-    sp: regSP[0],
-    pc: regPC[0],
-    flags: {
-      zero: !!(regF[0] & F_ZERO),
-      carry: !!(regF[0] & F_CARRY),
-      hcarry: !!(regF[0] & F_HCARRY),
-      subtract: !!(regF[0] & F_OP)
-    }
-  };
-}
+const getRegisters = () => ({
+  a: regA[0],
+  b: regB[0],
+  c: regC[0],
+  d: regD[0],
+  e: regE[0],
+  f: regF[0],
+  hl: regHL[0],
+  sp: regSP[0],
+  pc: regPC[0],
+  flags: {
+    zero: !!(regF[0] & F_ZERO),
+    carry: !!(regF[0] & F_CARRY),
+    hcarry: !!(regF[0] & F_HCARRY),
+    subtract: !!(regF[0] & F_OP)
+  },
+});
 
 export default {reset, stop, start, exec, isInterruptable, isStopped, getRegisters, getPC};
 

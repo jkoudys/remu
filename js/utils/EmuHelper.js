@@ -6,7 +6,7 @@
 export function stringify(array) {
   let retStr = '';
 
-  for (let i = 0, len = array.length; i < len && array[i] !== 0; i++) {
+  for (const char of array) {
     retStr += String.fromCharCode(array[i]);
   }
 

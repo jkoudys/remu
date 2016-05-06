@@ -1,3 +1,5 @@
+import React from 'react';
+
 import * as EmuActions from '../actions/EmuActions.js';
 
 export default class Screen extends React.Component {

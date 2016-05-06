@@ -1,11 +1,13 @@
 /**
  * GameBoy Emulator, main app
  */
+import { render } from 'react-dom';
+
 import Keypad from './utils/emulator/Keypad.js';
 import GameBoy from './components/GameBoy.jsx';
 
-document.addEventListener('DOMContentLoaded', function() {
-  React.render(
+document.addEventListener('DOMContentLoaded', () => {
+  render(
     <GameBoy />,
     document.getElementById('reactboy')
   );
