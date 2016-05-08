@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { findDOMNode } from 'react-dom';
 
-import * as EmuActions from '../actions/EmuActions.js';
+import { receiveCanvas } from '../actions/EmuActions.js';
 
-export default function Screen() {}
-Object.assign(Screen.prototype, React.Component.prototype, {
+export default function Screen(props) {
+  Component.call(this, props);
+}
+Object.assign(Screen.prototype, Component.prototype, {
   componentDidMount() {
     // Since we currently only support one device at a time, assume the last
     // Screen is the one the device should render to. May never change, as
     // multiple devices should just be multiple browser tabs.
-    setTimeout(EmuActions.receiveCanvas.bind(this, findDOMNode(this)), 0);
+    setTimeout(() => receiveCanvas(findDOMNode(this)), 0);
   },
 
   render() {
