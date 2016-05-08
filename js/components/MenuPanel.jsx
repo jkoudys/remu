@@ -1,78 +1,18 @@
-import React from 'react';
-import EmuStore from '../stores/EmuStore.js';
-import LogStore from '../stores/LogStore.js';
+import React, { Component } from 'react';
+import EmuStore from '../stores/EmuStore';
+import LogStore from '../stores/LogStore';
+
+import EmulatorLog from './Menu/EmulatorLog.jsx';
+import RomInfo from './Menu/RomInfo.jsx';
+import SaveStates from './Menu/SaveStates.jsx';
+import MenuOpen from './Menu/MenuOpen.jsx';
 
 // Time formatter
-const _fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
 const _saveStub = [{ time: Date.now() - 1000, id: 123 }];
 
-const RomInfo = ({ filename, name, size, type, systems }) => (
-  <section id="rominfo">
-    <h3>
-      <i className="fa fa-table" /> {name || filename}
-    </h3>
-    <dl>
-      <dt>Filename</dt>
-      <dd>{filename}</dd>
-      <dt>Size</dt>
-      <dd>{(size >> 10) + ' KiB'}</dd>
-      <dt>Supported Systems</dt>
-      <dd>{systems.join(', ')}</dd>
-      <dt>Type</dt>
-      <dd>{type}</dd>
-    </dl>
-  </section>
-);
-
-const SaveStates = ({ saves }) => (
-  <section id="savestates">
-    <h3>
-      <i className="fa fa-database" /> Save Games
-    </h3>
-    <ul>
-      {saves.map(({ time }) => <li key={time}>><a className="loadsave">{_fmt.format(time)}</a></li>)}
-      <li>
-        <a className="newsave">Save New State</a>
-      </li>
-    </ul>
-    <fieldset>
-      <button title="Download battery save">
-        <i className="fa fa-download" />
-      </button>
-      <button title="Upload battery save">
-        <i className="fa fa-upload" />
-      </button>
-    </fieldset>
-  </section>
-);
-
-const EmulatorLog = ({ log }) => (
-  <section id="emulatorlog">
-    <h3>
-      <i className="fa fa-list" /> Log
-    </h3>
-    <table>
-      <tbody>
-        {log.map(({ time, component, msg }, i) => (
-          <tr key={'entry' + i}>
-            <td>{Math.floor((time - log[0].time) / 1000) + 's'}</td>
-            <td>{component}</td>
-            <td>{msg}</td>
-          </tr>
-          ))}
-      </tbody>
-    </table>
-  </section>
-);
-
-const MenuOpen = ({ onClick }) => (
-  <button key="menutoggle" className="menutoggle" onClick={onClick}>
-    <i className="fa fa-chevron-left" /> menu
-  </button>
-);
-
 export default function MenuPanel(props) {
-  React.Component.call(this, props);
+  Component.call(this, props);
+
   Object.assign(this, {
     state: {
       open: (document.body.offsetWidth > 1400),
@@ -85,7 +25,7 @@ export default function MenuPanel(props) {
     _handleCloseMenu: () => this.setState({ open: false }),
   });
 }
-Object.assign(MenuPanel.prototype, React.Component.prototype, {
+Object.assign(MenuPanel.prototype, Component.prototype, {
   componentWillMount() {
     EmuStore.addChangeListener(this._onEmuChange);
     LogStore.addChangeListener(this._onLogChange);
