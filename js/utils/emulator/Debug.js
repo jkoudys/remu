@@ -1,20 +1,7 @@
 /**
  * Debug functions
  */
-
-const Debug = {
-  /**
-   * Disassemble an instruction
-   * Lets debugging view something closer to what the original source
-   * looked like. Not readable by modern standards, but pretty dang nice
-   * for 1983.
-   * @param int opcode
-   * @return string Readable instruction
-   */
-  disAsm(opcode) {
-    return instructionTable[opcode];
-  }
-};
+/* eslint max-len: "off" */
 
 const instructionTable = [
   // 0x00
@@ -48,7 +35,21 @@ const instructionTable = [
   // Ex
   'LDH (n),A', 'POP HL', 'LDH (C),A', 'XX', 'XX', 'PUSH HL', 'AND n', 'RST 20', 'ADD SP,d', 'JP (HL)', 'LD (nn),A', 'XX', 'XX', 'XX', 'XOR n', 'RST 28',
   // Fx
-  'LDH A,(n)', 'POP AF', 'XX', 'DI', 'XX', 'PUSH AF', 'OR n', 'RST 30', 'LDHL SP,d', 'LD SP,HL', 'LD A,(nn)', 'EI', 'XX', 'XX', 'CP n', 'RST 38'
+  'LDH A,(n)', 'POP AF', 'XX', 'DI', 'XX', 'PUSH AF', 'OR n', 'RST 30', 'LDHL SP,d', 'LD SP,HL', 'LD A,(nn)', 'EI', 'XX', 'XX', 'CP n', 'RST 38',
 ];
+
+const Debug = {
+  /**
+   * Disassemble an instruction
+   * Lets debugging view something closer to what the original source
+   * looked like. Not readable by modern standards, but pretty dang nice
+   * for 1983.
+   * @param int opcode
+   * @return string Readable instruction
+   */
+  disAsm(opcode) {
+    return instructionTable[opcode];
+  },
+};
 
 export default Debug;

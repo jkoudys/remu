@@ -1,23 +1,23 @@
 /**
  * The system timer
  */
-
+/* eslint default-case: "off" */
 import MMU from './mmu.js';
 
 // Flux
-import {log} from '../../actions/LogActions.js';
+import { log } from '../../actions/LogActions.js';
 
 // Basic timer registers
-var _div = 0;
-var _tma = 0;
-var _tima = 0;
-var _tac = 0;
+let _div = 0;
+let _tma = 0;
+let _tima = 0;
+let _tac = 0;
 
 // The clock
 const _clock = {
   main: 0,
   sub: 0,
-  div: 0
+  div: 0,
 };
 
 const Timer = {
@@ -42,15 +42,13 @@ const Timer = {
   },
 
   inc(ticks) {
-    var oldclk = _clock.main;
-
     _clock.sub += ticks;
     if (_clock.sub > 3) {
       _clock.main++;
       _clock.sub -= 4;
 
       _clock.div++;
-      if (_clock.div == 16) {
+      if (_clock.div === 16) {
         _clock.div = 0;
         _div++;
         _div &= 0xFF;
@@ -103,7 +101,7 @@ const Timer = {
         _tac = val & 7;
         break;
     }
-  }
+  },
 };
 
 export default Timer;
