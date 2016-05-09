@@ -22,7 +22,7 @@ export default function GameBoy(props) {
     _onChange: () => this.setState(buildState()),
   });
 }
-Object.assign(GameBoy.prototype, Component.prototype, {
+GameBoy.prototype = Object.assign(Object.create(Component.prototype), {
   componentWillMount() {
     EmuStore.addChangeListener(this._onChange);
   },
