@@ -14,9 +14,15 @@ import Timer from './Timer.js';
 
 import bios from './data/bios';
 
-const MMU = {
-  _bios: bios,
-  _rom: null,
+const blankMMU = {
+  _wram: new Uint8Array(0x2000),
+  _eram: new Uint8Array(0x8000),
+  _zram: new Uint8Array(0x7f),
+
+  _inbios: 1,
+  _ie: 0,
+  _if: 0,
+
   _carttype: 0,
   _mbc: [{}, {
     rombank: 0,
@@ -26,41 +32,19 @@ const MMU = {
   }],
   _romoffs: 0x4000,
   _ramoffs: 0,
+};
 
-  _eram: null,
-  _wram: null,
-  _zram: null,
-
-  _inbios: 1,
-  _ie: 0,
-  _if: 0,
+const MMU = {
+  _bios: bios,
+  _rom: null,
 
   /**
    * Getters
    */
-  getRom() {
-    return MMU._rom;
-  },
+  getRom: () => MMU._rom,
 
   reset() {
-    MMU._wram = new Uint8Array(0x2000);
-    MMU._eram = new Uint8Array(0x8000);
-    MMU._zram = new Uint8Array(0x7f);
-
-    MMU._inbios = 1;
-    MMU._ie = 0;
-    MMU._if = 0;
-
-    MMU._carttype = 0;
-    MMU._mbc[0] = {};
-    MMU._mbc[1] = {
-      rombank: 0,
-      rambank: 0,
-      ramon: 0,
-      mode: 0,
-    };
-    MMU._romoffs = 0x4000;
-    MMU._ramoffs = 0;
+    Object.assign(MMU, blankMMU),
 
     setTimeout(log, 1, 'mmu', 'Reset');
   },
@@ -335,5 +319,8 @@ const MMU = {
     MMU.wb(addr + 1, val >> 8);
   },
 };
+
+// Start out reset
+MMU.reset();
 
 export default MMU;

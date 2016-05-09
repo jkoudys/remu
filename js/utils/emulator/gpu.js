@@ -1,5 +1,5 @@
 // Flux
-import {log} from '../../actions/LogActions.js';
+import { log } from '../../actions/LogActions.js';
 
 // Game Boy components
 import MMU from './mmu.js';
@@ -50,7 +50,7 @@ const _colors = [
   endFix([0xFF, 0xFF, 0xFF, 0xFF]),
   endFix([0xC0, 0xC0, 0xC0, 0xFF]),
   endFix([0x60, 0x60, 0x60, 0xFF]),
-  endFix([0, 0, 0, 0xFF])
+  endFix([0, 0, 0, 0xFF]),
 ];
 
 const _greys = [0xFF, 0xC0, 0x60, 0];
@@ -104,14 +104,14 @@ const GPU = {
 
     for (let i = 0; i < 40; i++) {
       _objdata[i] = {
-        'y': -16,
-        'x': -8,
-        'tile': 0,
-        'palette': 0,
-        'yflip': 0,
-        'xflip': 0,
-        'prio': 0,
-        'num': i
+        y: -16,
+        x: -8,
+        tile: 0,
+        palette: 0,
+        yflip: 0,
+        xflip: 0,
+        prio: 0,
+        num: i,
       };
     }
 
@@ -129,7 +129,7 @@ const GPU = {
     if (addr >= ADDR_BGMAP0 && addr < (ADDR_BGMAP0 + _tileMap0.length)) {
       GPU.updateBackground(addr);
     }
-      GPU.updateTile(addr, val);
+    GPU.updateTile(addr, val);
 //      GPU.renderBackground();
   },
 
@@ -197,7 +197,7 @@ const GPU = {
       case 0:
         if (GPU._modeclocks >= 51) {
           // End of hblank for last scanline; render screen
-          if (_curline == 143) {
+          if (_curline === 0x8F) {
             _linemode = 1;
             _context.putImageData(_imageData, 0, 0);
             _context.drawImage(_bgLayer, _scrl[0], _scrl[1]);
@@ -212,7 +212,7 @@ const GPU = {
 
         // In vblank
       case 1:
-        if (GPU._modeclocks >= 114) {
+        if (GPU._modeclocks >= 0x72) {
           GPU._modeclocks = 0;
           _curline++;
           if (_curline > 0x99) {
@@ -262,7 +262,7 @@ const GPU = {
     const line = _tileSet[tile].data.subarray(y << 5, 1 + y << 5);
 
     // X is cartesian, sx is the bit offset to mask
-    for (let x = 0, sx = 0x80; x < 32; x += 4, sx = sx >> 1) {
+    for (let x = 0, sx = 0x80; x < 0x20; x += 4, sx = sx >> 1) {
       // Grab the grey by mapping 0-3, taken from 2 bits in vram, to our palette
       let grey = _greys[((_vram[saddr] & sx) ? 1 : 0) | ((_vram[saddr + 1] & sx) ? 2 : 0)];
       line[x] = grey;
@@ -275,10 +275,10 @@ const GPU = {
   updateoam(addr, val) {
     const obj = addr >> 2;
     addr -= 0xFE00;
-    if (obj < 40) {
+    if (obj < 0x28) {
       switch (addr & 3) {
         case 0:
-          _objdata[obj].y = val - 16;
+          _objdata[obj].y = val - 0x10;
           break;
         case 1:
           _objdata[obj].x = val - 8;
@@ -302,14 +302,14 @@ const GPU = {
     switch (gaddr) {
       case 0:
         return (_lcdon ? 0x80 : 0) |
-          ((GPU._bgtilebase == 0x0000) ? 0x10 : 0) |
-          ((GPU._bgmapbase == 0x1C00) ? 0x08 : 0) |
+          ((GPU._bgtilebase === 0x0000) ? 0x10 : 0) |
+          ((GPU._bgmapbase === 0x1C00) ? 0x08 : 0) |
           (_objsize ? 0x04 : 0) |
           (GPU._objon ? 0x02 : 0) |
           (_bgon ? 0x01 : 0);
 
       case 1:
-        return (GPU._curline == _raster ? 4 : 0) | _linemode;
+        return (GPU._curline === _raster ? 4 : 0) | _linemode;
 
       case 2:
         return _scrl[1];
@@ -375,7 +375,7 @@ const GPU = {
       case 9:
         break;
     }
-  }
+  },
 };
 
 export default GPU;

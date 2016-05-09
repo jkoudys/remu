@@ -1,7 +1,7 @@
 // Flux
-import { EventEmitter } from 'events';
-import AppDispatcher from '../dispatcher/AppDispatcher.js';
-import { ActionTypes } from '../constants/EmuConstants.js';
+import Store from './Store';
+import { register, waitFor } from '../dispatcher/AppDispatcher.js';
+import { ActionTypes as AT } from '../constants/EmuConstants.js';
 import * as EmuActions from '../actions/EmuActions.js';
 
 // z80 emu
@@ -13,9 +13,6 @@ import Z80 from '../utils/emulator/z80.js';
 
 // Helpers
 import { stringify, supportedSystems, type } from '../utils/EmuHelper.js';
-
-// Basic event name for basic emulator state change
-const CHANGE_EVENT = 'change';
 
 /**
  * Local variables to the store
@@ -93,12 +90,6 @@ function receiveRom(buffer) {
 }
 
 /**
- * Refresh our FPS counter
- */
-function receiveFps() {
-}
-
-/**
  * Attach the GPU to a canvas "screen"
  * @param HTMLCanvasElement canvas Our new screen
  */
@@ -166,22 +157,7 @@ function executeFrame() {
   _frameCounter.frames += fclock;
 }
 
-const EmuStore = Object.assign({}, EventEmitter.prototype, {
-  /**
-   * @param {function} callback
-   */
-  addChangeListener(callback) {
-    this.on(CHANGE_EVENT, callback);
-  },
-
-  removeChangeListener(callback) {
-    this.removeListener(CHANGE_EVENT, callback);
-  },
-
-  emitChange() {
-    this.emit(CHANGE_EVENT);
-  },
-
+const EmuStore = Object.assign({}, Store, {
   /**
    * Get the basic info on this ROM
    * @return object Paremeters of ROM metadata, e.g. name, size, etc.
@@ -207,40 +183,21 @@ const EmuStore = Object.assign({}, EventEmitter.prototype, {
    * Get the current state of the registers
    * @return object Registers
    */
-  getRegisters() {
-    return Z80.getRegisters();
-  },
-});
+  getRegisters: () => Z80.getRegisters(),
 
-EmuStore.dispatchToken = AppDispatcher.register(function(payload) {
-  switch (payload.type) {
-    case ActionTypes.ROM_RECEIVE:
+  dispatcherIndex: register({
+    [AT.ROM_RECEIVE]: ({ rom, filename }) => {
       resetEmulation();
-      receiveRom(payload.rom);
-      _romFileName = payload.filename;
+      receiveRom(rom);
+      _romFileName = filename;
       runEmulation();
-      EmuStore.emitChange();
-      break;
-    case ActionTypes.EMU_RESET:
-      resetEmulation();
-      EmuStore.emitChange();
-      break;
-    case ActionTypes.EMU_PAUSE:
-      pauseEmulation();
-      EmuStore.emitChange();
-      break;
-    case ActionTypes.EMU_RUN:
-      runEmulation();
-      EmuStore.emitChange();
-      break;
-    case ActionTypes.FPS_RECEIVE:
-      EmuStore.emitChange();
-      break;
-    case ActionTypes.CANVAS_RECEIVE:
-      receiveCanvas(payload.canvas);
-      EmuStore.emitChange();
-      break;
-  }
+    },
+    [AT.EMU_RESET]: () => resetEmulation(),
+    [AT.EMU_PAUSE]: () => pauseEmulation(),
+    [AT.EMU_RUN]: () => runEmulation(),
+    [AT.FPS_RECEIVE]: ({ fps }) => { _fps = fps; },
+    [AT.SCREEN_CANVAS_RECEIVE]: ({ canvas }) => receiveCanvas(canvas),
+  }, () => EmuStore.emitChange()),
 });
 
 export default EmuStore;

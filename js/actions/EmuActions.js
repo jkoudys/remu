@@ -32,14 +32,3 @@ export function receiveRom(rom, filename) {
     filename,
   });
 }
-
-/**
- * Receives our canvas
- * @param HTMLCanvasElement canvas
- */
-export function receiveCanvas(canvas) {
-  dispatch({
-    type: ActionTypes.CANVAS_RECEIVE,
-    canvas,
-  });
-}

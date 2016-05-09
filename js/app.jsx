@@ -14,6 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   // Bind keyboard to the GB keypad
-  window.onkeydown = Keypad.keydown;
-  window.onkeyup = Keypad.keyup;
+  window.addEventListener('keyup', Keypad.keyup);
+  window.addEventListener('keydown', Keypad.keydown);
 });

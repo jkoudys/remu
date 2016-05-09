@@ -9,6 +9,7 @@ import AppDispatcher from '../dispatcher/AppDispatcher.js';
 export function log(component, msg) {
   AppDispatcher.dispatch({
     type: ActionTypes.LOG_APPEND,
+    time: Date.now(),
     component,
     msg,
   });

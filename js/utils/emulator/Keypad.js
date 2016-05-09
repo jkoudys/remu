@@ -1,94 +1,75 @@
+/**
+ * Game Boy Keypad
+ * Set as a single byte of bit-flags for each of the 8 possible keys.
+ * Odd in that it's a high state (1) that represents a button is not pressed.
+ * 1980s technology is notoriously unkind to software developers in the distant
+ * future.
+ */
+
 // Flux
-import {log} from '../../actions/LogActions.js';
+import { log } from '../../actions/LogActions.js';
+
+// A byte with each bit representing one of the 8 keys
+let keys = 0x00;
+
+// Map of the keyboard keycodes to the GB Keypad input
+// TODO: This is where a configurable keyboard would go
+const keyMap = new Map([
+  // Right
+  [39, 0x01],
+  // Left
+  [37, 0x02],
+  // Up
+  [38, 0x04],
+  // Down
+  [40, 0x08],
+  // A
+  [90, 0x10],
+  // B
+  [88, 0x20],
+  // Select
+  [32, 0x40],
+  // Start
+  [13, 0x80],
+]);
+
+// TODO: I'm still not entirely sure why we need this.
+let colidx = 0;
 
 const Keypad = {
-  _keys: [0x0F, 0x0F],
-  _colidx: 0,
 
-  reset: function() {
-    Keypad._keys = [0x0F, 0x0F];
-    Keypad._colidx = 0;
+  reset() {
+    keys = 0x00;
+    colidx = 0;
     setTimeout(log, 1, 'keypad', 'Reset');
   },
 
-  rb: function() {
-    switch (Keypad._colidx) {
-      case 0x00:
-        return 0x00;
-        break;
+  rb() {
+    switch (colidx) {
       case 0x10:
-        return Keypad._keys[0];
-        break;
+        return keys & 0x0F;
       case 0x20:
-        return Keypad._keys[1];
-        break;
+        return (keys & 0xF0) >> 8;
       default:
         return 0x00;
-        break;
     }
   },
 
-  wb: function(v) {
-    Keypad._colidx = v & 0x30;
+  wb(v) {
+    colidx = v & 0x30;
   },
 
-  keydown: function(e) {
-    switch (e.keyCode) {
-      case 39:
-        Keypad._keys[1] &= 0xE;
-        break;
-      case 37:
-        Keypad._keys[1] &= 0xD;
-        break;
-      case 38:
-        Keypad._keys[1] &= 0xB;
-        break;
-      case 40:
-        Keypad._keys[1] &= 0x7;
-        break;
-      case 90:
-        Keypad._keys[0] &= 0xE;
-        break;
-      case 88:
-        Keypad._keys[0] &= 0xD;
-        break;
-      case 32:
-        Keypad._keys[0] &= 0xB;
-        break;
-      case 13:
-        Keypad._keys[0] &= 0x7;
-        break;
-    }
+  keydown({ keyCode }) {
+    const bit = keyMap.get(keyCode);
+    // Set bit to 0, to show it's pressed
+    if (bit) keys &= ~keyCode;
   },
 
-  keyup: function(e) {
-    switch (e.keyCode) {
-      case 39:
-        Keypad._keys[1] |= 0x1;
-        break;
-      case 37:
-        Keypad._keys[1] |= 0x2;
-        break;
-      case 38:
-        Keypad._keys[1] |= 0x4;
-        break;
-      case 40:
-        Keypad._keys[1] |= 0x8;
-        break;
-      case 90:
-        Keypad._keys[0] |= 0x1;
-        break;
-      case 88:
-        Keypad._keys[0] |= 0x2;
-        break;
-      case 32:
-        Keypad._keys[0] |= 0x5;
-        break;
-      case 13:
-        Keypad._keys[0] |= 0x8;
-        break;
-    }
-  }
+  keyup({ keyCode }) {
+    const bit = keyMap.get(keyCode);
+    // Put the bit back to 1, to show it's not pressed
+    if (bit) keys |= keyCode;
+  },
 };
 
 export default Keypad;

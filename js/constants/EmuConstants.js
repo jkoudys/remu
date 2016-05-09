@@ -4,6 +4,7 @@ export const ActionTypes = [
   'EMU_PAUSE',
   'EMU_RUN',
   'FPS_RECEIVE',
-  'CANVAS_RECEIVE',
+  'SCREEN_CANVAS_RECEIVE',
+  'SCREEN_CANVAS_CLEAR',
   'LOG_APPEND',
 ].reduce((o, k) => {o[k] = k; return o;}, {});
