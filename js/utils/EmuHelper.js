@@ -1,19 +1,4 @@
 /**
- * Look for a null-terminated string over a memory extent
- * @param arraylike array The array/TypedArray to iterate through
- * @return string
- */
-export function stringify(array) {
-  let retStr = '';
-
-  for (const char of array) {
-    retStr += String.fromCharCode(char);
-  }
-
-  return retStr;
-}
-
-/**
  * Check what platforms this rom supports - game boy, gameboy colour, super game boy.
  * We give an array back, so the frontend code can decide how to show it.
  * @param Uint8Array rom The full ROM

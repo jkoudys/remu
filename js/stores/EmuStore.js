@@ -12,14 +12,14 @@ import Timer from '../utils/emulator/Timer.js';
 import Z80 from '../utils/emulator/z80.js';
 
 // Helpers
-import { stringify, supportedSystems, type } from '../utils/EmuHelper.js';
+import { supportedSystems, type } from '../utils/EmuHelper.js';
 
 /**
  * Local variables to the store
  */
 let _romFileName = '';
 const _frameCounter = { start: 0, frames: 0 };
-let _startTime = Date.now();
+const _startTime = Date.now();
 
 /**
  * @param int _fps Target fps - no need for this to be higher than what you can see
@@ -116,7 +116,7 @@ function executeFrame() {
       opTicks = Z80.exec();
     }
     if (Z80.isInterruptable() && MMU._ie && MMU._if) {
-      let ifired = MMU._ie & MMU._if;
+      const ifired = MMU._ie & MMU._if;
       Z80._halt = false;
       Z80.disableInterrupts();
       if (ifired & 0x01) {
@@ -158,6 +158,7 @@ function executeFrame() {
 }
 
 const EmuStore = Object.assign({}, Store, {
+  isRomLoaded: () => !!MMU._rom,
   /**
    * Get the basic info on this ROM
    * @return object Paremeters of ROM metadata, e.g. name, size, etc.
@@ -165,7 +166,7 @@ const EmuStore = Object.assign({}, Store, {
   getRomInfo() {
     if (MMU._rom) {
       return {
-        name: stringify(MMU._rom.subarray(0x0134, 0x0144)),
+        name: String.fromCharCode(...MMU._rom.subarray(0x0134, 0x0144)),
         systems: supportedSystems(MMU._rom),
         type: type(MMU._rom),
         filename: _romFileName,
@@ -175,17 +176,13 @@ const EmuStore = Object.assign({}, Store, {
     return null;
   },
 
-  isRomLoaded() {
-    return !!MMU._rom;
-  },
-
   /**
    * Get the current state of the registers
    * @return object Registers
    */
   getRegisters: () => Z80.getRegisters(),
 
-  dispatcherIndex: register({
+  dispatchToken: register({
     [AT.ROM_RECEIVE]: ({ rom, filename }) => {
       resetEmulation();
       receiveRom(rom);
