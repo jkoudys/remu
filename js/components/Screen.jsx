@@ -10,7 +10,7 @@ Object.assign(Screen.prototype, Component.prototype, {
   componentDidMount() {
     // TODO: this component's mounted by the ROM_RECEIVE action, so we need to
     // put it outside that call to dispatch the canvas receive.
-    // Maybe canvases should be managed by the emu, and attached on mount instead?
+    // Maybe canvases should be managed by the emu, and attached in the component on mount instead?
     setTimeout(() => receiveCanvas(findDOMNode(this)));
   },
 

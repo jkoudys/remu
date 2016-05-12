@@ -27,6 +27,7 @@ const blankMMU = {
   _mbc: [{}, {
     rombank: 0,
     rambank: 0,
+    // TODO: ramon currently does nothing
     ramon: 0,
     mode: 0,
   }],

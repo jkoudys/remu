@@ -6,6 +6,7 @@ import EmulatorLog from './Menu/EmulatorLog.jsx';
 import RomInfo from './Menu/RomInfo.jsx';
 import SaveStates from './Menu/SaveStates.jsx';
 import MenuOpen from './Menu/MenuOpen.jsx';
+import Debugger from './Debugger.jsx';
 
 // Time formatter
 const _saveStub = [{ time: Date.now() - 1000, id: 123 }];
@@ -25,7 +26,7 @@ export default function MenuPanel(props) {
     _handleCloseMenu: () => this.setState({ open: false }),
   });
 }
-Object.assign(MenuPanel.prototype, Component.prototype, {
+MenuPanel.prototype = Object.assign(Object.create(Component.prototype), {
   componentWillMount() {
     EmuStore.addChangeListener(this._onEmuChange);
     LogStore.addChangeListener(this._onLogChange);
@@ -82,6 +83,7 @@ Object.assign(MenuPanel.prototype, Component.prototype, {
             </nav>
           </section>
           {romInfo}
+          <Debugger />
           <SaveStates saves={_saveStub} />
           <EmulatorLog log={log} />
         </section>

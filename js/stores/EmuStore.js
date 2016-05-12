@@ -159,6 +159,8 @@ function executeFrame() {
 
 const EmuStore = Object.assign({}, Store, {
   isRomLoaded: () => !!MMU._rom,
+  getRom: () => MMU._rom,
+
   /**
    * Get the basic info on this ROM
    * @return object Paremeters of ROM metadata, e.g. name, size, etc.

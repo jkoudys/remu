@@ -37,7 +37,6 @@ const keyMap = new Map([
 let colidx = 0;
 
 const Keypad = {
-
   reset() {
     keys = 0x00;
     colidx = 0;

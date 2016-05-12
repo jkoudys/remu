@@ -77,9 +77,7 @@ const GPU = {
     _bgCtx = _bgLayer.getContext('2d');
 
     // Build a bunch of new 8x8 tiles in our tilemap
-    for (let i = 0; i < 0x200; i++) {
-      _tileSet[i] = new ImageData(8, 8);
-    }
+    for (let i = 0; i < 0x200; i++) _tileSet[i] = new ImageData(8, 8);
 
     // Blank the screen
     GPU.blankScreen();
