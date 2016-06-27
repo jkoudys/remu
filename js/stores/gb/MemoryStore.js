@@ -3,7 +3,7 @@
  * Heavily uint8-based, but cannot be modelled as a contiguous block
  * as the Game Boy's MMU has a special chip for what's known as "bank-swiching"
  */
-import Store from '../../stores/Store';
+import Store from '../Store';
 import { register } from '../../dispatcher/AppDispatcher.js';
 import { ActionTypes as AT } from '../../constants/EmuConstants.js';
 
@@ -14,8 +14,6 @@ import bios from './data/bios';
 const _rom = [];
 // Header (in bank 0)
 let _header;
-// Are we currently booting up?
-let _inBios = true;
 // The memory extents, indexed by name of Memory Region
 const _extents = {};
 // Binding extents to memory region, with tuples of address and region [min, max, region]
@@ -55,7 +53,6 @@ const buildBounds = (extents) => [
 
 // Reset the memory space, but keep the ROM loaded
 function reset() {
-  _inBios = true;
   Object.assign(_extents, buildExtents());
   // Empty the bounds to add new ones to it
   _bounds.length = 0;
@@ -81,9 +78,11 @@ const MemoryStore = Object.assign({}, Store, {
   },
 
   // Read a word (16-bit)
+  // TODO: determine if words are always aligned on 2-bytes, e.g. must it be
+  // [1,2],3,4, or could it be 1,[2,3],4 also?
   readWord(addr) {
-    const [min, , region] = fetchRegion(addr);
-    return (new Uint16Array(region.buffer))[(addr - min) / 2];
+    const [min, , { buffer }] = fetchRegion(addr);
+    return (new Uint16Array(buffer, addr - min, 1))[0];
   },
 
   // We don't strictly follow a traditional flux pattern, because the
@@ -98,9 +97,9 @@ const MemoryStore = Object.assign({}, Store, {
 
   // Write a word
   writeWord(addr, val = 0) {
-    const [min, , region] = fetchRegion(addr);
-    const region16 = new Uint16Array(region.buffer);
-    region16[(addr - min) / 2] = val;
+    const [min, , { buffer }] = fetchRegion(addr);
+    const region16 = new Uint16Array(buffer, addr - min, 1);
+    region16[0] = val;
   },
 
   dispatchToken: register({

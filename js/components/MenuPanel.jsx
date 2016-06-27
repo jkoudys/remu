@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { Component, CreateElement as ce } from 'react';
 import EmuStore from '../stores/EmuStore';
 import LogStore from '../stores/LogStore';
 
@@ -8,13 +8,15 @@ import SaveStates from './Menu/SaveStates.jsx';
 import MenuOpen from './Menu/MenuOpen.jsx';
 import Debugger from './Debugger.jsx';
 
+const { assign, create } = Object;
+
 // Time formatter
 const _saveStub = [{ time: Date.now() - 1000, id: 123 }];
 
 export default function MenuPanel(props) {
   Component.call(this, props);
 
-  Object.assign(this, {
+  assign(this, {
     state: {
       open: (document.body.offsetWidth > 1400),
       submenu: null,
@@ -26,7 +28,7 @@ export default function MenuPanel(props) {
     _handleCloseMenu: () => this.setState({ open: false }),
   });
 }
-MenuPanel.prototype = Object.assign(Object.create(Component.prototype), {
+MenuPanel.prototype = assign(create(Component.prototype), {
   componentWillMount() {
     EmuStore.addChangeListener(this._onEmuChange);
     LogStore.addChangeListener(this._onLogChange);
@@ -44,50 +46,52 @@ MenuPanel.prototype = Object.assign(Object.create(Component.prototype), {
     let romInfo;
 
     if (!open) {
-      menuToggle = <MenuOpen onClick={this._handleOpenMenu} />;
+      menuToggle = ce(MenuOpen, { onClick: this._handleOpenMenu });
     }
 
     if (submenu) {
       back = (
-        <button key="back" className="back">
-          <i className="fa fa-chevron-left" />
-        </button>
+        ce('button', { key: 'back', className: 'back' }, [
+          ce('i', { className: 'fa fa-chevron-left' }),
+        ]),
       );
     }
 
     if (romProps) {
-      romInfo = <RomInfo {...romProps} />;
+      romInfo = ce(RomInfo, romProps);
     }
 
     return (
-      <aside className={`menupanel ${open ? 'open' : ''}`}>
-        <nav className="controls">
-          <h1>Menu</h1>
-          <button className="close" onClick={this._handleCloseMenu}>
-            <i className="fa fa-times" />
-          </button>
-          {back}
-          {menuToggle}
-        </nav>
-        <section>
-          <section className="submenus">
-            <nav>
-              <ul>
-                <li>
-                  <i className="fa fa-cogs" /> Debugger
-                </li>
-                <li>
-                  <i className="fa fa-picture-o" /> Tile Browser
-                </li>
-              </ul>
-            </nav>
-          </section>
-          {romInfo}
-          <Debugger />
-          <SaveStates saves={_saveStub} />
-          <EmulatorLog log={log} />
-        </section>
-      </aside>
+      ce('aside', { className: `menupanel ${open ? 'open' : ''}` }, [
+        ce('nav', { className: 'controls' }, [
+          ce('h1', {}, 'Menu'),
+          ce('button', { className: 'close', onClick: this._handleCloseMenu }, [
+            ce('i', { className: 'fa fa-times' }),
+          ]),
+          back,
+          menuToggle,
+        ]),
+        ce('section', {}, [
+          ce('section', { className: 'submenus' }, [
+            ce('nav', {}, [
+              ce('ul', {}, [
+                ce('li', {}, [
+                  ce('i', { className: 'fa fa-cogs' }),
+                  ' Debugger',
+                ]),
+                ce('li', {}, [
+                  ce('i', { className: 'fa fa-picture-o' }),
+                  ' Tile Browser',
+                ]),
+              ]),
+            ]),
+          ]),
+          romInfo,
+          ce(Debugger),
+          ce(SaveStates, { saves: _saveStub }),
+          ce(EmulatorLog, { log }),
+        ]),
+      ])
     );
   },
 });

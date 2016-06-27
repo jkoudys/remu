@@ -8,7 +8,8 @@ import { ActionTypes as AT } from '../constants/EmuConstants';
  */
 const _log = [];
 
-const LogStore = Object.assign({}, Store, {
+const LogStore = {
+  ...Store,
   /**
    * Gets the runtime log
    * @return array<object>
@@ -20,6 +21,6 @@ const LogStore = Object.assign({}, Store, {
   dispatcherIndex: register({
     [AT.LOG_APPEND]: ({ msg, component, time }) => _log.push({ msg, component, time }),
   }, () => LogStore.emitChange()),
-});
+};
 
 export default LogStore;

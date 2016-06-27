@@ -157,7 +157,8 @@ function executeFrame() {
   _frameCounter.frames += fclock;
 }
 
-const EmuStore = Object.assign({}, Store, {
+const EmuStore = {
+  ...Store,
   isRomLoaded: () => !!MMU._rom,
   getRom: () => MMU._rom,
 
@@ -197,6 +198,6 @@ const EmuStore = Object.assign({}, Store, {
     [AT.FPS_RECEIVE]: ({ fps }) => { _fps = fps; },
     [AT.SCREEN_CANVAS_RECEIVE]: ({ canvas }) => receiveCanvas(canvas),
   }, () => EmuStore.emitChange()),
-});
+};
 
 export default EmuStore;

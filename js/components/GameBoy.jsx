@@ -2,13 +2,15 @@
  * The main gameboy display
  */
 
-import React, { Component } from 'react';
+import { Component, CreateElement as ce } from 'react';
 
 import MenuPanel from './MenuPanel.jsx';
 import RomLoader from './RomLoader.jsx';
 import Screen from './Screen.jsx';
 
 import EmuStore from '../stores/EmuStore.js';
+
+const { assign, create } = Object;
 
 const buildState = () => ({
   loaded: EmuStore.isRomLoaded(),
@@ -17,12 +19,12 @@ const buildState = () => ({
 export default function GameBoy(props) {
   Component.call(this, props);
 
-  Object.assign(this, {
+  assign(this, {
     state: buildState(),
     _onChange: () => this.setState(buildState()),
   });
 }
-GameBoy.prototype = Object.assign(Object.create(Component.prototype), {
+GameBoy.prototype = assign(create(Component.prototype), {
   componentWillMount() {
     EmuStore.addChangeListener(this._onChange);
   },
@@ -32,18 +34,11 @@ GameBoy.prototype = Object.assign(Object.create(Component.prototype), {
   },
 
   render() {
-    let screen;
-    if (this.state.loaded) {
-      screen = <Screen key="screen" />;
-    } else {
-      screen = <RomLoader key="romloader" />;
-    }
-
     return (
-      <section id="gameboy">
-        {screen}
-        <MenuPanel />
-      </section>
+      ce('section', { id: 'gameboy' }, [
+        ce(this.state.loaded ? Screen : RomLoader),
+        ce(MenuPanel),
+      ])
     );
   },
 });

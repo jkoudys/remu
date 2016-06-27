@@ -7,7 +7,7 @@ import { render } from 'react-dom';
 import Keypad from './utils/emulator/Keypad';
 import GameBoy from './components/GameBoy.jsx';
 
-import MemoryStore from './utils/emulator/Memory';
+import MemoryStore from './stores/gb/MemoryStore';
 
 // Bind keyboard to the GB keypad
 window.addEventListener('keyup', Keypad.keyup);

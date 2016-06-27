@@ -61,13 +61,13 @@ const Keypad = {
   keydown({ keyCode }) {
     const bit = keyMap.get(keyCode);
     // Set bit to 0, to show it's pressed
-    if (bit) keys &= ~keyCode;
+    if (bit) keys &= ~bit;
   },
 
   keyup({ keyCode }) {
     const bit = keyMap.get(keyCode);
     // Put the bit back to 1, to show it's not pressed
-    if (bit) keys |= keyCode;
+    if (bit) keys |= bit;
   },
 };
 

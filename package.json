@@ -1,7 +1,7 @@
 {
-  "name": "jsGB",
-  "version": "0.0.0",
-  "description": "React-based, modern, optimized GB emulator for JavaScript",
+  "name": "remu",
+  "version": "0.0.1",
+  "description": "React-based, modern, optimized emulator on JavaScript, for Game Boy and more.",
   "main": "webpack.config.js",
   "directories": {
     "test": "tests"
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jkoudys/jsGB.git"
+    "url": "git://github.com/jkoudys/remu.git"
   },
   "keywords": [
     "gameboy",
@@ -23,7 +23,7 @@
   "author": "Joshua Koudys",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/jkoudys/jsGB/issues"
+    "url": "https://github.com/jkoudys/remu/issues"
   },
   "devDependencies": {
     "babel": "^6.5.2",

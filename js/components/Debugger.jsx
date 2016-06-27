@@ -1,11 +1,10 @@
-import React from 'react';
+import { createElement as ce } from 'react';
 
 import EmuStore from '../stores/EmuStore';
 import Debug from '../utils/emulator/Debug';
 
 export default () => (
-  <section className="debugger">
-    <h3>Debugger</h3>
-    {(EmuStore.getRom() || []).slice(0x1000, 0x2000).map(Debug.disAsm)}
-  </section>
+   ce('section', { className: 'debugger' },
+     ce('h3', null, 'Debugger'),
+   )
 );
